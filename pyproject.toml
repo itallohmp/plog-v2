@@ -6,7 +6,7 @@ authors = [
     {name = "Itallo Polito",email = "itallomp@hotmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi (>=0.137.1,<0.138.0)",
     "paramiko (>=5.0.0,<6.0.0)",

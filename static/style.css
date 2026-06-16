@@ -478,8 +478,17 @@ body {
 }
 
 @keyframes status-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
 }
 
 .filtros {
@@ -621,6 +630,8 @@ button:disabled {
   box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
+/* #tabelaLogs td:nth-child(1),
+#tabelaLogs td:nth-child(2), */
 #tabelaLogs td:nth-child(3),
 #tabelaLogs td:nth-child(4),
 #tabelaLogs td:nth-child(5),
