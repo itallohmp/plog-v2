@@ -14,7 +14,7 @@ ALLOWED_ORIGINS = [
 
 # Origem dos flows (nfcapd + nfdump via SSH)
 FLOW_REMOTE_DIR = os.getenv(
-    "PLOG_FLOW_REMOTE_DIR", f"/var/flows/{os.getenv("PLOG_FLOW_ROUTE")}"
+    "PLOG_FLOW_REMOTE_DIR", f"/var/flows/{os.getenv('PLOG_FLOW_ROUTE')}"
 ).rstrip("/")
 
 # Estrutura remota: <FLOW_REMOTE_DIR>/<dia>/<hora>/<arquivos nfcapd>
