@@ -1,7 +1,4 @@
-import json
-from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, Optional
-
+from typing import Any, Dict, Iterable, Optional
 
 PROTOCOLOS = {
     1: "ICMP",
@@ -44,10 +41,10 @@ def _port_block(event: Dict[str, Any]) -> str:
 
 def normalize_pcap_event(event: Dict[str, Any]) -> Dict[str, Any]:
     data = _first_value(event, ("t_first", "t_event", "t_received", "t_last"))
-    origem = _first_value(event, ("src4_addr", "src_addr"))
-    nat = _first_value(event, ("src4_xlt_ip", "src_xlt_ip"))
-    destino = _first_value(event, ("dst4_addr", "dst_addr"))
-    destino_final = _first_value(event, ("dst4_xlt_ip", "dst_xlt_ip"))
+    origem = _first_value(event, ("src4_addr", "src6_addr", "src_addr"))
+    nat = _first_value(event, ("src4_xlt_ip", "src_xlt_ip", "xlate_src_ip"))
+    destino = _first_value(event, ("dst4_addr", "dst6_addr", "dst_addr"))
+    destino_final = _first_value(event, ("dst4_xlt_ip", "dst_xlt_ip", "xlate_dst_ip"))
 
     return {
         "data": data,
@@ -65,61 +62,38 @@ def normalize_pcap_event(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def iter_pcap_events(path: Path) -> Iterator[Dict[str, Any]]:
-    try:
-        with path.open("r", encoding="utf-8") as fh:
-            payload = json.load(fh)
-    except json.JSONDecodeError:
-        yield from _iter_ndjson_events(path)
-        return
-
-    if isinstance(payload, list):
-        for item in payload:
-            if isinstance(item, dict):
-                yield item
-        return
-
-    if isinstance(payload, dict):
-        records = payload.get("records") or payload.get("flows") or payload.get("data")
-        if isinstance(records, list):
-            for item in records:
-                if isinstance(item, dict):
-                    yield item
-            return
-        yield payload
-
-
-def _iter_ndjson_events(path: Path) -> Iterator[Dict[str, Any]]:
-    with path.open("r", encoding="utf-8", errors="ignore") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                item = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(item, dict):
-                yield item
-
-
 def pcap_event_matches(
     event: Dict[str, Any],
     ip: Optional[str] = None,
     porta: Optional[str] = None,
     data: Optional[str] = None,
 ) -> bool:
-    if ip and ip not in {
-        str(event.get("src4_addr", "")),
-        str(event.get("src4_xlt_ip", "")),
-        str(event.get("dst4_addr", "")),
-        str(event.get("dst4_xlt_ip", "")),
-        str(event.get("ip4_router", "")),
-    }:
-        return False
+    if ip:
+        ip_candidates = {
+            str(event.get(key, ""))
+            for key in (
+                "src4_addr",
+                "src6_addr",
+                "src_addr",
+                "src4_xlt_ip",
+                "src_xlt_ip",
+                "xlate_src_ip",
+                "dst4_addr",
+                "dst6_addr",
+                "dst_addr",
+                "dst4_xlt_ip",
+                "dst_xlt_ip",
+                "xlate_dst_ip",
+                "ip4_router",
+            )
+        }
+        if ip not in ip_candidates:
+            return False
 
     if data:
-        event_date = _first_value(event, ("t_first", "t_event", "t_received", "t_last"))[:10]
+        event_date = _first_value(
+            event, ("t_first", "t_event", "t_received", "t_last")
+        )[:10]
         if event_date and event_date != data:
             return False
 
@@ -131,6 +105,8 @@ def pcap_event_matches(
         direct_ports = {
             _as_int(event.get("src_port")),
             _as_int(event.get("dst_port")),
+            _as_int(event.get("src_xlt_port")),
+            _as_int(event.get("dst_xlt_port")),
         }
         block_start = _as_int(event.get("pblock_start"))
         block_end = _as_int(event.get("pblock_end"))

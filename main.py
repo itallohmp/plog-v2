@@ -1,22 +1,28 @@
+from app.api.routes.flows import router as flows_router
+from app.api.routes.system import router as system_router
+from app.core.config import ALLOWED_ORIGINS, API_PREFIX
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes.logs import router as logs_router
-from app.api.routes.logs_filter import router as logs_filter_router
-from app.core.config import ROOT_PATH, ALLOWED_ORIGINS
-
-app = FastAPI(root_path=ROOT_PATH)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app = FastAPI(title="PLOG")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
 
-app.include_router(logs_router)
-app.include_router(logs_filter_router) 
+app.include_router(system_router, prefix=API_PREFIX)
+app.include_router(flows_router, prefix=API_PREFIX)
+
+# Mount estatico por ultimo para nao sombrear as rotas da API.
+app.mount("/", StaticFiles(directory="static", html=True), name="frontend")
+
+import os
+
+print(os.getenv("PLOG_FLOW_SSH_HOST"))
+print(os.getenv("PLOG_FLOW_SSH_USER"))
+print(os.getenv("PLOG_FLOW_SSH_PASSWORD"))

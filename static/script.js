@@ -6,8 +6,9 @@ let currentController = null;
 document.addEventListener("DOMContentLoaded", function () {
   setDefaultDate();
   renderPagination(1, 1);
-  const btn = document.getElementById("btnBuscar");
+
   const form = document.getElementById("filterForm");
+  const btn = document.getElementById("btnBuscar");
 
   if (form) {
     form.addEventListener("submit", (event) => {
@@ -31,26 +32,24 @@ function buildUrl(page = 1) {
   const ip = document.getElementById("ip")?.value.trim() || "";
   const porta = document.getElementById("porta")?.value.trim() || "";
   const day = document.getElementById("day")?.value || "";
+  const horaDe = document.getElementById("horaDe")?.value.trim() || "";
+  const horaAte = document.getElementById("horaAte")?.value.trim() || "";
 
-  if (!ip && !porta) {
-    throw new Error("Informe um IP ou uma porta para buscar.");
+  if (!day) {
+    throw new Error("Selecione uma data para buscar.");
   }
 
   const params = new URLSearchParams();
+  params.set("data", day);
   params.set("pagina", String(page));
   params.set("tamanho_pagina", String(pageSize));
 
   if (ip) params.set("ip", ip);
   if (porta) params.set("porta", porta);
+  if (horaDe) params.set("hora_de", horaDe);
+  if (horaAte) params.set("hora_ate", horaAte);
 
-  if (day) {
-    const [year, month, dayPart] = day.split("-");
-    if (year) params.set("ano", year);
-    if (month) params.set("mes", month.padStart(2, "0"));
-    if (dayPart) params.set("dia", dayPart.padStart(2, "0"));
-  }
-
-  return `${API_PREFIX}/logs/filter?${params.toString()}`;
+  return `${API_PREFIX}/flows?${params.toString()}`;
 }
 
 function clearTable() {
@@ -103,10 +102,10 @@ function renderPagination(page, totalPages) {
   if (!pagination) return;
 
   const prevDisabled = page <= 1 ? "disabled" : "";
-  const nextDisabled = page >= totalPages ? "disabled" : "";
+  const nextDisabled = page >= currentTotalPages ? "disabled" : "";
 
   pagination.innerHTML = `
-    <span>Página ${page} de ${totalPages || 1}</span>
+    <span>Página ${page} de ${currentTotalPages}</span>
     <button id="btnPrev" type="button" ${prevDisabled}>Anterior</button>
     <button id="btnNext" type="button" ${nextDisabled}>Próxima</button>
   `;
@@ -122,7 +121,7 @@ function renderPagination(page, totalPages) {
 
   if (btnNext) {
     btnNext.addEventListener("click", () => {
-      if (page < totalPages) buscarLogs(page + 1);
+      if (page < currentTotalPages) buscarLogs(page + 1);
     });
   }
 }
@@ -135,7 +134,6 @@ async function buscarLogs(page = 1) {
 
   clearTable();
 
-  const statusEl = document.getElementById("status");
   const summaryEl = document.getElementById("resultSummary");
   const btn = document.getElementById("btnBuscar");
   setStatus("Carregando...", "loading");
@@ -153,112 +151,53 @@ async function buscarLogs(page = 1) {
     return;
   }
 
-  console.log("URL chamada:", url);
-
   currentController = new AbortController();
   const signal = currentController.signal;
 
   try {
     const resp = await fetch(url, {
       signal,
-      headers: {
-        "Accept": "application/x-ndjson"
-      }
+      headers: { Accept: "application/json" },
     });
 
+    const text = await resp.text();
+    let payload = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch (e) {
+      console.warn("Resposta não-JSON:", e, text);
+    }
+
     if (!resp.ok) {
-      const text = await resp.text();
-      console.error("Resposta não OK:", resp.status, text);
-
-      let message = `Erro ${resp.status}`;
-
-      try {
-        const json = JSON.parse(text);
-        if (json.erro) {
-          message = json.detalhes ? `${json.erro}: ${json.detalhes}` : json.erro;
-        }
-      } catch {
-      }
-
+      const message = formatError(payload, resp.status);
       setStatus(message, "error");
       renderEmptyRow(message);
       if (summaryEl) summaryEl.textContent = "Não foi possível carregar os flows.";
       return;
     }
 
-    if (!resp.body) {
-      setStatus("Resposta sem corpo.", "error");
-      renderEmptyRow("Resposta sem corpo.");
-      return;
+    const registros = Array.isArray(payload?.registros) ? payload.registros : [];
+    for (const obj of registros) {
+      appendRow(obj);
     }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let buffer = "";
-    let receivedCount = 0;
+    const total = payload?.total ?? registros.length;
+    const totalPaginas = payload?.total_paginas ?? 1;
+    renderPagination(page, totalPaginas);
 
-    const pageSize = parseInt(document.getElementById("pageSize")?.value || "100", 10);
-    let totalPagesGuess = page;
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        try {
-          const obj = JSON.parse(trimmed);
-          appendRow(obj);
-          receivedCount++;
-          if (receivedCount % 25 === 0) {
-            setStatus(`${receivedCount} flows recebidos...`, "loading");
-          }
-        } catch (e) {
-          console.warn("Erro ao parsear linha NDJSON:", e, trimmed);
-        }
-      }
-    }
-
-    // processa sobra final do buffer
-    if (buffer.trim()) {
-      try {
-        const obj = JSON.parse(buffer.trim());
-        appendRow(obj);
-        receivedCount++;
-      } catch (e) {
-        console.warn("Erro ao parsear buffer final:", e, buffer);
-      }
-    }
-
-    if (receivedCount < pageSize) {
-      totalPagesGuess = page;
-    } else {
-      totalPagesGuess = page + 1;
-    }
-
-    renderPagination(page, totalPagesGuess);
-
-    if (receivedCount === 0) {
+    if (registros.length === 0) {
       renderEmptyRow("Nenhum flow encontrado para os filtros informados.");
       setStatus("Nenhum resultado", "empty");
-      if (summaryEl) summaryEl.textContent = "Tente outro IP, porta ou data.";
+      if (summaryEl) summaryEl.textContent = "Tente outra data, IP, porta ou hora.";
     } else {
-      setStatus(`${receivedCount} flows recebidos`, "success");
+      setStatus(`${registros.length} flows nesta página`, "success");
       if (summaryEl) {
-        summaryEl.textContent = `Mostrando ${receivedCount} resultado(s) da página ${page}.`;
+        summaryEl.textContent = `Mostrando ${registros.length} de ${total} resultado(s) — página ${page} de ${totalPaginas}.`;
       }
     }
   } catch (err) {
     if (err.name === "AbortError") {
       setStatus("Busca cancelada.", "empty");
-      console.log("Fetch abortado.");
     } else {
       setStatus("Erro ao buscar flows.", "error");
       renderEmptyRow("Erro ao buscar flows.");
@@ -268,6 +207,16 @@ async function buscarLogs(page = 1) {
     currentController = null;
     if (btn) btn.disabled = false;
   }
+}
+
+function formatError(payload, status) {
+  if (payload && payload.erro) {
+    if (payload.detalhes && typeof payload.detalhes === "string") {
+      return `${payload.erro}: ${payload.detalhes}`;
+    }
+    return payload.erro;
+  }
+  return `Erro ${status}`;
 }
 
 function renderEmptyRow(message) {

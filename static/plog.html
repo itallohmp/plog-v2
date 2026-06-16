@@ -4,15 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PLog</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="body_plog">
   <header class="site_header">
     <div class="brand">
-      <img src="/static/img/logo.png" alt="Logo PLog" class="logo">
+      <img src="/img/logo.png" alt="Logo PLog" class="logo">
       <div>
         <strong>PLOG</strong>
-        <span>Consulta de flows PCAP</span>
+        <span>Monitoramento de flows</span>
       </div>
     </div>
     <ul>
@@ -21,22 +24,27 @@
   </header>
 
   <main class="plog_shell">
-    <section class="hero_card">
-      <p class="eyebrow">Servidor 10.10.10.53 / var/flows/rj02bd01</p>
-      <h1>Filtro de flows PCAP</h1>
-      <p>Consulte eventos NAT por IP, porta e data usando os arquivos JSON de flows.</p>
+    <section class="hero_card hero_card--compact" aria-label="Apresentação do sistema">
+      <p class="eyebrow">Sistema PLog</p>
+      <h1>Consulta de flows</h1>
+      <p>Interface centralizada para análise de tráfego registrado nos roteadores.</p>
     </section>
 
     <section class="filter_card" aria-labelledby="filterTitle">
       <div class="section_header">
         <div>
           <h2 id="filterTitle">Filtros</h2>
-          <p>Informe pelo menos um IP ou porta para refinar a busca.</p>
+          <p>Selecione a data. IP, porta e intervalo de horas são opcionais.</p>
         </div>
         <span id="status" class="status_badge" aria-live="polite">Pronto para buscar</span>
       </div>
 
       <form class="filtros" id="filterForm">
+        <div class="field">
+          <label for="day">Data</label>
+          <input type="date" id="day" required>
+        </div>
+
         <div class="field">
           <label for="ip">IP</label>
           <input type="text" id="ip" inputmode="decimal" placeholder="Ex: 177.137.21.3">
@@ -48,8 +56,13 @@
         </div>
 
         <div class="field">
-          <label for="day">Data</label>
-          <input type="date" id="day">
+          <label for="horaDe">Hora de</label>
+          <input type="number" id="horaDe" min="0" max="23" placeholder="0">
+        </div>
+
+        <div class="field">
+          <label for="horaAte">Hora até</label>
+          <input type="number" id="horaAte" min="0" max="23" placeholder="23">
         </div>
 
         <div class="field">
@@ -61,7 +74,7 @@
           </select>
         </div>
 
-        <button id="btnBuscar" class="primary_button" type="submit">Buscar flows</button>
+        <button id="btnBuscar" class="primary_button" type="submit">Buscar Logs</button>
       </form>
     </section>
 
@@ -76,7 +89,7 @@
 
       <div class="table_wrap">
         <table id="tabelaLogs">
-          <caption>Eventos PCAP encontrados</caption>
+          <caption>Flows encontrados</caption>
           <thead>
             <tr>
               <th>Data</th>
@@ -91,7 +104,7 @@
           </thead>
           <tbody>
             <tr class="empty_row">
-              <td colspan="8">Use os filtros acima para buscar flows.</td>
+              <td colspan="8">Use os filtros acima para buscar Logs.</td>
             </tr>
           </tbody>
         </table>
@@ -104,9 +117,9 @@
       ©2025 Interativa Fibra & Energia Ltda.
       <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
     </h3>
-    <img src="/static/img/logointerativa.png" alt="Logo Interativa" class="logointerativa">
+    <img src="/img/logointerativa.png" alt="Logo Interativa" class="logointerativa">
   </footer>
 
-  <script src="/static/script.js"></script>
+  <script src="/script.js"></script>
 </body>
 </html>

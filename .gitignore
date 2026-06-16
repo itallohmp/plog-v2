@@ -18,3 +18,4 @@ __pycache__/
 .cursor-server/
 .cursor-skills/
 **cursor/
+**.env
