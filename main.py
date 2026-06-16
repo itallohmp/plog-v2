@@ -20,9 +20,3 @@ app.include_router(flows_router, prefix=API_PREFIX)
 
 # Mount estatico por ultimo para nao sombrear as rotas da API.
 app.mount("/", StaticFiles(directory="static", html=True), name="frontend")
-
-import os
-
-print(os.getenv("PLOG_FLOW_SSH_HOST"))
-print(os.getenv("PLOG_FLOW_SSH_USER"))
-print(os.getenv("PLOG_FLOW_SSH_PASSWORD"))
