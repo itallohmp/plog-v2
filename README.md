@@ -1,20 +1,32 @@
 # PLog
 
-PLog é uma ferramenta backend em Python + FastAPI para coletar, normalizar e filtrar logs de acesso de redes de fibra. O projeto automatiza buscas que antes eram feitas manualmente via SSH, transformando-as em consultas web estruturadas e entregando resultados em NDJSON por streaming — ideal para responder solicitações oficiais de investigação com rapidez e rastreabilidade.
+PLog é uma ferramenta backend em Python + FastAPI para consultar flows de rede (nfcapd) de forma estruturada. O usuário seleciona uma data no frontend, a API conecta via SSH ao servidor de flows, localiza os arquivos nfcapd correspondentes e usa o `nfdump` para exportar os dados em JSON, que são validados com Pydantic e exibidos na interface.
 
 ## Visão geral
 
-Coletar logs de acesso à internet (ex.: logs de roteadores/gateways), extrair campos relevantes (IP, timestamp, NAT, porta, destino), aplicar filtros e expor os resultados via API para consumo por scripts, dashboards ou autoridades.
+Coletar flows de acesso à internet a partir dos arquivos nfcapd, extrair campos relevantes (IP, timestamp, NAT, porta, destino, roteador), aplicar filtros e expor os resultados via API.
 
 A aplicação permite:
 
-- buscar logs remotamente via SSH;
-- processar linhas de log com regex;
-- retornar dados estruturados em JSON;
-- filtrar logs locais por diferentes critérios;
+- conectar remotamente via SSH ao servidor de flows;
+- localizar automaticamente os arquivos nfcapd da data selecionada;
+- exportar os flows em JSON via `nfdump` (sem regex);
+- validar e estruturar os dados com Pydantic;
+- filtrar por IP, porta e intervalo de horas;
 - paginar resultados;
-- transmitir dados em **streaming NDJSON**;
 - servir o frontend pela pasta `static`.
+
+## Configuração (variáveis de ambiente)
+
+Nenhuma credencial fica no código. Configure no servidor:
+
+- `PLOG_FLOW_SSH_HOST` (padrão `10.10.10.53`), `PLOG_FLOW_SSH_PORT`, `PLOG_FLOW_SSH_USER`
+- `PLOG_FLOW_SSH_KEY_PATH` (recomendado) ou `PLOG_FLOW_SSH_PASSWORD`
+- `PLOG_FLOW_SSH_KNOWN_HOSTS` (recomendado para validar o host)
+- `PLOG_FLOW_REMOTE_DIR` (padrão `/var/flows/rj02bd01`)
+- `PLOG_FLOW_DAY_DIR_FORMAT` (padrão `%Y-%m-%d`)
+- `PLOG_NFDUMP_BIN` (padrão `nfdump`), `PLOG_NFDUMP_TIMEOUT`
+- `PLOG_FLOW_LOCAL_PATH` (opcional): caminho de um arquivo JSON ou pasta com `.json` para testes locais sem SSH/VPN. Quando definido, o backend lê desse caminho em vez de conectar no servidor.
 
 ## Tecnologias utilizadas
 
@@ -27,23 +39,19 @@ A aplicação permite:
 
 ## Funcionalidades
 
-- Verificação de saúde da API
-- Consulta remota de logs via SSH
-- Parse estruturado de linhas de log
+- Verificação de saúde da API (`/health`)
+- Consulta de flows por data (`/flows`)
+- Conexão SSH ao servidor de flows (Paramiko)
+- Exportação via `nfdump -R <pasta_da_hora> -o json`
+- Validação e estruturação com Pydantic
 - Filtro por:
-  - IP da rota
-  - IP NAT
-  - Porta NAT
-  - Ano
-  - Mês
-  - Dia
-  - Hora inicial
-  - Hora final
-  - Palavra-chave
+  - Data
+  - IP
+  - Porta (inclui faixa de bloco NAT quando disponível)
+  - Intervalo de horas
 - Paginação de resultados
-- Streaming em NDJSON
 - Serviço de arquivos estáticos
-- Tratamento básico de erros
+- Tratamento de erros (404 sem dados, 502 falha SSH/nfdump, 422 parâmetros)
 
 
 ## Como a aplicação funciona
