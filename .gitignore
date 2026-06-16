@@ -16,3 +16,5 @@ __pycache__/
 .dotnet/corefx/cryptography/crls/
 .cursor/
 .cursor-server/
+.cursor-skills/
+**cursor/
