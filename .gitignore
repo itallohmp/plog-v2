@@ -19,3 +19,5 @@ __pycache__/
 .cursor-skills/
 **cursor/
 **.env
+*/logs/
+*/nfcapd*
