@@ -1,41 +1,47 @@
-
-
-const API_PREFIX = "/api"; 
+const API_PREFIX = "/api";
 let currentPage = 1;
 let currentTotalPages = 1;
 let currentController = null;
 
-document.addEventListener("DOMContentLoaded", async function () {
-  await carregarRotas();
-
+document.addEventListener("DOMContentLoaded", function () {
+  setDefaultDate();
+  renderPagination(1, 1);
   const btn = document.getElementById("btnBuscar");
-  if (btn) {
+  const form = document.getElementById("filterForm");
+
+  if (form) {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      buscarLogs(1);
+    });
+  } else if (btn) {
     btn.addEventListener("click", () => buscarLogs(1));
   }
 });
 
+function setDefaultDate() {
+  const day = document.getElementById("day");
+  if (day && !day.value) {
+    day.value = new Date().toISOString().slice(0, 10);
+  }
+}
+
 function buildUrl(page = 1) {
   const pageSize = document.getElementById("pageSize")?.value || "100";
-  const keyword = document.getElementById("keyword")?.value.trim() || "";
   const ip = document.getElementById("ip")?.value.trim() || "";
   const porta = document.getElementById("porta")?.value.trim() || "";
-  const day = document.getElementById("day")?.value || ""; // 
-  const hourFrom = document.getElementById("hour_from")?.value || ""; 
-  const hourTo = document.getElementById("hour_to")?.value || ""; 
-  const ipRota = document.getElementById("ip_rota")?.value.trim() || "";
+  const day = document.getElementById("day")?.value || "";
 
-  if (!ipRota) {
-    throw new Error("Seleciona uma origem.");
+  if (!ip && !porta) {
+    throw new Error("Informe um IP ou uma porta para buscar.");
   }
 
   const params = new URLSearchParams();
-  params.set("ip_rota", ipRota);
   params.set("pagina", String(page));
   params.set("tamanho_pagina", String(pageSize));
 
-  if (keyword) params.set("palavra_chave", keyword);
-  if (ip) params.set("ip_nat", ip);
-  if (porta) params.set("porta_nat", porta);
+  if (ip) params.set("ip", ip);
+  if (porta) params.set("porta", porta);
 
   if (day) {
     const [year, month, dayPart] = day.split("-");
@@ -43,9 +49,6 @@ function buildUrl(page = 1) {
     if (month) params.set("mes", month.padStart(2, "0"));
     if (dayPart) params.set("dia", dayPart.padStart(2, "0"));
   }
-
-  if (hourFrom) params.set("hora_de", hourFrom);
-  if (hourTo) params.set("hora_ate", hourTo);
 
   return `${API_PREFIX}/logs/filter?${params.toString()}`;
 }
@@ -60,20 +63,24 @@ function appendRow(obj) {
   if (!tbody) return;
 
   const data = obj.data || "-";
+  const evento = obj.evento || "-";
   const protocolo = obj.protocolo || "-";
   const origem = obj.origem || "-";
   const nat = obj.nat || "-";
+  const blocoPortas = obj.bloco_portas || obj.porta_origem || obj.porta_destino || "-";
   const destino = obj.destino || "-";
-  const destino_final = obj.destino_final || "-";
+  const roteador = obj.roteador || obj.destino_final || "-";
 
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td>${escapeHtml(data)}</td>
+    <td>${escapeHtml(evento)}</td>
     <td>${escapeHtml(protocolo)}</td>
     <td>${escapeHtml(origem)}</td>
     <td>${escapeHtml(nat)}</td>
+    <td>${escapeHtml(blocoPortas)}</td>
     <td>${escapeHtml(destino)}</td>
-    <td>${escapeHtml(destino_final)}</td>
+    <td>${escapeHtml(roteador)}</td>
   `;
   tbody.appendChild(tr);
 }
@@ -99,9 +106,9 @@ function renderPagination(page, totalPages) {
   const nextDisabled = page >= totalPages ? "disabled" : "";
 
   pagination.innerHTML = `
-    Página ${page} de ${totalPages || 1}
-    <button id="btnPrev" ${prevDisabled}>Anterior</button>
-    <button id="btnNext" ${nextDisabled}>Próxima</button>
+    <span>Página ${page} de ${totalPages || 1}</span>
+    <button id="btnPrev" type="button" ${prevDisabled}>Anterior</button>
+    <button id="btnNext" type="button" ${nextDisabled}>Próxima</button>
   `;
 
   const btnPrev = document.getElementById("btnPrev");
@@ -129,14 +136,20 @@ async function buscarLogs(page = 1) {
   clearTable();
 
   const statusEl = document.getElementById("status");
-  if (statusEl) statusEl.textContent = "Carregando...";
+  const summaryEl = document.getElementById("resultSummary");
+  const btn = document.getElementById("btnBuscar");
+  setStatus("Carregando...", "loading");
+  if (summaryEl) summaryEl.textContent = "Buscando flows no servidor...";
+  if (btn) btn.disabled = true;
 
   let url;
   try {
     url = buildUrl(page);
   } catch (err) {
-    if (statusEl) statusEl.textContent = err.message;
-    alert(err.message);
+    setStatus(err.message, "error");
+    if (summaryEl) summaryEl.textContent = "Ajuste os filtros e tente novamente.";
+    renderEmptyRow(err.message);
+    if (btn) btn.disabled = false;
     return;
   }
 
@@ -157,24 +170,25 @@ async function buscarLogs(page = 1) {
       const text = await resp.text();
       console.error("Resposta não OK:", resp.status, text);
 
-      if (statusEl) {
-        statusEl.textContent = `Erro ${resp.status}`;
-      }
+      let message = `Erro ${resp.status}`;
 
       try {
         const json = JSON.parse(text);
         if (json.erro) {
-          alert(json.erro);
-          if (statusEl) statusEl.textContent = json.erro;
+          message = json.detalhes ? `${json.erro}: ${json.detalhes}` : json.erro;
         }
       } catch {
       }
 
+      setStatus(message, "error");
+      renderEmptyRow(message);
+      if (summaryEl) summaryEl.textContent = "Não foi possível carregar os flows.";
       return;
     }
 
     if (!resp.body) {
-      if (statusEl) statusEl.textContent = "Resposta sem corpo.";
+      setStatus("Resposta sem corpo.", "error");
+      renderEmptyRow("Resposta sem corpo.");
       return;
     }
 
@@ -203,6 +217,9 @@ async function buscarLogs(page = 1) {
           const obj = JSON.parse(trimmed);
           appendRow(obj);
           receivedCount++;
+          if (receivedCount % 25 === 0) {
+            setStatus(`${receivedCount} flows recebidos...`, "loading");
+          }
         } catch (e) {
           console.warn("Erro ao parsear linha NDJSON:", e, trimmed);
         }
@@ -228,54 +245,44 @@ async function buscarLogs(page = 1) {
 
     renderPagination(page, totalPagesGuess);
 
-    if (statusEl) {
-      statusEl.textContent = `Recebidos ${receivedCount} linhas.`;
+    if (receivedCount === 0) {
+      renderEmptyRow("Nenhum flow encontrado para os filtros informados.");
+      setStatus("Nenhum resultado", "empty");
+      if (summaryEl) summaryEl.textContent = "Tente outro IP, porta ou data.";
+    } else {
+      setStatus(`${receivedCount} flows recebidos`, "success");
+      if (summaryEl) {
+        summaryEl.textContent = `Mostrando ${receivedCount} resultado(s) da página ${page}.`;
+      }
     }
   } catch (err) {
     if (err.name === "AbortError") {
-      if (statusEl) statusEl.textContent = "Busca cancelada.";
+      setStatus("Busca cancelada.", "empty");
       console.log("Fetch abortado.");
     } else {
-      if (statusEl) statusEl.textContent = "Erro ao buscar logs.";
+      setStatus("Erro ao buscar flows.", "error");
+      renderEmptyRow("Erro ao buscar flows.");
       console.error("Erro no fetch:", err);
     }
   } finally {
     currentController = null;
+    if (btn) btn.disabled = false;
   }
 }
 
-async function carregarRotas() {
-  const select = document.getElementById("ip_rota");
-  if (!select) return;
+function renderEmptyRow(message) {
+  const tbody = document.querySelector("#tabelaLogs tbody");
+  if (!tbody) return;
+  tbody.innerHTML = `
+    <tr class="empty_row">
+      <td colspan="8">${escapeHtml(message)}</td>
+    </tr>
+  `;
+}
 
-  select.innerHTML = `<option value="">Carregando origens...</option>`;
-
-  try {
-    const resp = await fetch(`${API_PREFIX}/rotas`);
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`Erro HTTP ${resp.status}: ${text}`);
-    }
-
-    const data = await resp.json();
-    const rotas = Array.isArray(data.rotas) ? data.rotas : [];
-
-    select.innerHTML = `<option value="">Seleciona uma origem</option>`;
-
-    if (rotas.length === 0) {
-      select.innerHTML = `<option value="">Nenhuma origem encontrada</option>`;
-      return;
-    }
-
-    for (const rota of rotas) {
-      const option = document.createElement("option");
-      option.value = rota;
-      option.textContent = rota;
-      select.appendChild(option);
-    }
-  } catch (err) {
-    console.error("Erro ao carregar rotas:", err);
-    select.innerHTML = `<option value="">Erro ao carregar rotas</option>`;
-  }
+function setStatus(message, state = "default") {
+  const statusEl = document.getElementById("status");
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.dataset.state = state;
 }

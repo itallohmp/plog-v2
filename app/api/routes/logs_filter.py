@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query
-from fastapi.responses import JSONResponse, StreamingResponse
+from datetime import datetime
+from pathlib import Path
+from typing import Iterable, Optional
 
 import glob
 import json
@@ -7,287 +8,229 @@ import os
 import re
 import subprocess
 
-from datetime import datetime
-from typing import Optional
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 
-from app.core.config import BASE_LOGS, SCRIPT_DOWNLOAD, SCRIPT_DESCOMPACTA
-from app.parsers.log_parser import parse_log_line, parse_time_str
+from app.core.config import (
+    BASE_LOGS,
+    FLOW_CACHE_DIR,
+    FLOW_JSON_PATTERN,
+    FLOW_REMOTE_DIR,
+    FLOW_REMOTE_HOST,
+    FLOW_REMOTE_USER,
+    FLOW_ROUTE,
+    SCRIPT_DOWNLOAD,
+)
+from app.parsers.log_parser import parse_log_line
+from app.parsers.pcap_parser import (
+    iter_pcap_events,
+    normalize_pcap_event,
+    pcap_event_matches,
+)
 
 router = APIRouter()
 
 
+def _safe_route(route: str) -> bool:
+    return not ("/" in route or "\\" in route or ".." in route)
+
+
+def _date_parts(
+    ano: Optional[str],
+    mes: Optional[str],
+    dia: Optional[str],
+) -> tuple[str, str, str, str]:
+    now = datetime.now()
+    year = ano or f"{now.year}"
+    month = (mes or f"{now.month}").zfill(2)
+    day = (dia or f"{now.day}").zfill(2)
+    return year, month, day, f"{year}-{month}-{day}"
+
+
+def _flow_cache_path(ano: str, mes: str, dia: str) -> Path:
+    return FLOW_CACHE_DIR / ano / mes / dia
+
+
+def _json_files(path: Path) -> list[Path]:
+    return sorted(path.glob(FLOW_JSON_PATTERN))
+
+
+def _run_flow_download(ano: str, mes: str, dia: str) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.update(
+        {
+            "FLOW_REMOTE_HOST": FLOW_REMOTE_HOST,
+            "FLOW_REMOTE_USER": FLOW_REMOTE_USER,
+            "FLOW_REMOTE_DIR": str(FLOW_REMOTE_DIR),
+            "FLOW_CACHE_DIR": str(FLOW_CACHE_DIR),
+        }
+    )
+    return subprocess.run(
+        ["bash", str(SCRIPT_DOWNLOAD), FLOW_ROUTE, ano, mes, dia],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+        timeout=300,
+    )
+
+
+def _stream_pcap_logs(
+    arquivos: Iterable[Path],
+    ip: Optional[str],
+    porta: Optional[str],
+    data_iso: str,
+    pagina: int,
+    tamanho_pagina: int,
+):
+    indice_inicio = max(0, (pagina - 1) * tamanho_pagina)
+    indice_fim = indice_inicio + tamanho_pagina
+    contador_encontrados = 0
+
+    for arquivo in arquivos:
+        print("Lendo PCAP JSON:", arquivo)
+        try:
+            for event in iter_pcap_events(arquivo):
+                if not pcap_event_matches(event, ip=ip, porta=porta, data=data_iso):
+                    continue
+
+                if indice_inicio <= contador_encontrados < indice_fim:
+                    normalized = normalize_pcap_event(event)
+                    normalized.pop("_raw", None)
+                    yield json.dumps(normalized, ensure_ascii=False) + "\n"
+
+                contador_encontrados += 1
+                if contador_encontrados >= indice_fim:
+                    return
+        except Exception as exc:
+            print(f"Erro ao ler JSON {arquivo}: {exc}")
+
+
+def _legacy_log_files(route: str, ano: str, mes: str, dia: str) -> list[str]:
+    caminho = os.path.join(BASE_LOGS, route, ano, mes, dia)
+    arquivos = glob.glob(os.path.join(caminho, "*.log"))
+
+    def chave_ordenacao_numerica(path: str):
+        nome = os.path.basename(path)
+        nums = re.findall(r"(\d+)", nome)
+        return int(nums[-1]) if nums else nome
+
+    return sorted(arquivos, key=chave_ordenacao_numerica)[:50]
+
+
+def _stream_legacy_logs(
+    arquivos: Iterable[str],
+    ip_nat: Optional[str],
+    porta_nat: Optional[str],
+    pagina: int,
+    tamanho_pagina: int,
+):
+    indice_inicio = max(0, (pagina - 1) * tamanho_pagina)
+    indice_fim = indice_inicio + tamanho_pagina
+    contador_encontrados = 0
+
+    for arquivo in arquivos:
+        try:
+            with open(arquivo, "r", errors="ignore") as fh:
+                for raw_line in fh:
+                    line = raw_line.strip()
+                    if not line:
+                        continue
+
+                    parseado = parse_log_line(line)
+                    if not parseado:
+                        continue
+
+                    nat_field = parseado.get("nat", "")
+                    nat_ip, _, nat_port = nat_field.partition(":")
+
+                    if ip_nat and nat_ip != ip_nat:
+                        continue
+                    if porta_nat and nat_port != porta_nat:
+                        continue
+
+                    if indice_inicio <= contador_encontrados < indice_fim:
+                        yield json.dumps(parseado, ensure_ascii=False) + "\n"
+
+                    contador_encontrados += 1
+                    if contador_encontrados >= indice_fim:
+                        return
+        except Exception as exc:
+            print(f"Erro ao ler log legado {arquivo}: {exc}")
+
+
 @router.get("/logs/filter")
 def filter_logs(
-    ip_rota: str = Query(..., description="Nome da pasta da rota"),
-    ip_nat: Optional[str] = Query(None),
-    porta_nat: Optional[str] = Query(None),
+    ip: Optional[str] = Query(None, description="IP para buscar nos flows"),
+    porta: Optional[str] = Query(None, description="Porta para buscar nos flows"),
     ano: Optional[str] = Query(None),
     mes: Optional[str] = Query(None),
     dia: Optional[str] = Query(None),
-    hora_de: Optional[str] = Query(None),
-    hora_ate: Optional[str] = Query(None),
-    palavra_chave: Optional[str] = Query(None),
     pagina: int = Query(1, ge=1),
-    tamanho_pagina: int = Query(100, ge=1, le=1000)
+    tamanho_pagina: int = Query(100, ge=1, le=1000),
+    ip_rota: Optional[str] = Query(None, description="Rota legada"),
+    ip_nat: Optional[str] = Query(None, description="IP NAT legado"),
+    porta_nat: Optional[str] = Query(None, description="Porta NAT legada"),
 ):
-    now = datetime.now()
-    ano = ano or f"{now.year}"
-    mes = (mes or f"{now.month}").zfill(2)
-    dia = (dia or f"{now.day}").zfill(2)
+    ano, mes, dia, data_iso = _date_parts(ano, mes, dia)
+    ip_filter = ip or ip_nat
+    porta_filter = porta or porta_nat
 
-    if "/" in ip_rota or "\\" in ip_rota or ".." in ip_rota:
+    if ip_rota and not _safe_route(ip_rota):
         return JSONResponse({"erro": "Nome de rota inválido."}, status_code=400)
 
-    pasta_rota = os.path.join(BASE_LOGS, ip_rota)
-
-    if not os.path.isdir(pasta_rota):
-        return JSONResponse(
-            {"erro": f"A pasta da rota '{ip_rota}' não existe."},
-            status_code=404
-        )
-
-    caminho = os.path.join(pasta_rota, ano, mes, dia)
-
     try:
-        print("Buscando logs em:", caminho)
+        caminho_json = _flow_cache_path(ano, mes, dia)
+        arquivos_json = _json_files(caminho_json)
 
-        arquivos_bz = glob.glob(os.path.join(caminho, "*.bz"))
-        arquivos_log = glob.glob(os.path.join(caminho, "*.log"))
-
-        if not arquivos_bz and not arquivos_log:
-            print("Logs não encontrados localmente, executando script de download...")
-
-            proc = subprocess.run(
-                ["bash", SCRIPT_DOWNLOAD, ip_rota, ano, mes, dia],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                # timeout=300,
-                text=True,
-                env=os.environ.copy()
-            )
-
+        if not arquivos_json:
+            print("Flows JSON não encontrados localmente, executando download...")
+            proc = _run_flow_download(ano, mes, dia)
             print("download returncode:", proc.returncode)
             print("download stderr:", proc.stderr)
+            arquivos_json = _json_files(caminho_json)
 
-            arquivos_bz = glob.glob(os.path.join(caminho, "*.bz"))
-            arquivos_log = glob.glob(os.path.join(caminho, "*.log"))
+            if proc.returncode != 0 and not arquivos_json:
+                arquivos_legados = _legacy_log_files(ip_rota, ano, mes, dia) if ip_rota else []
+                if not arquivos_legados:
+                    return JSONResponse(
+                        {
+                            "erro": "Nenhum flow JSON encontrado após tentativa de download",
+                            "detalhes": (proc.stderr or proc.stdout).strip(),
+                        },
+                        status_code=404,
+                    )
 
-            if not arquivos_bz and not arquivos_log:
-                return JSONResponse(
-                    {
-                        "erro": "Nenhum log encontrado após tentativa de download",
-                        "detalhes": proc.stderr.strip()
-                    },
-                    status_code=404
-                )
-
-        if arquivos_bz and not arquivos_log:
-            print("Descompactando arquivos .bz...")
-
-            proc2 = subprocess.run(
-                ["bash", SCRIPT_DESCOMPACTA, ip_rota, ano, mes, dia],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                # timeout=300,
-                text=True,
-                env=os.environ.copy()
+        if arquivos_json:
+            return StreamingResponse(
+                _stream_pcap_logs(
+                    arquivos_json,
+                    ip=ip_filter,
+                    porta=porta_filter,
+                    data_iso=data_iso,
+                    pagina=pagina,
+                    tamanho_pagina=tamanho_pagina,
+                ),
+                media_type="application/x-ndjson",
             )
 
-            print("descompacta returncode:", proc2.returncode)
-            print("descompacta stderr:", proc2.stderr)
-
-            arquivos_log = glob.glob(os.path.join(caminho, "*.log"))
-
-            if not arquivos_log:
-                return JSONResponse(
-                    {
-                        "erro": "Nenhum .log após descompactar",
-                        "detalhes": proc2.stderr.strip()
-                    },
-                    status_code=404
+        if ip_rota:
+            arquivos_legados = _legacy_log_files(ip_rota, ano, mes, dia)
+            if arquivos_legados:
+                return StreamingResponse(
+                    _stream_legacy_logs(
+                        arquivos_legados,
+                        ip_nat=ip_filter,
+                        porta_nat=porta_filter,
+                        pagina=pagina,
+                        tamanho_pagina=tamanho_pagina,
+                    ),
+                    media_type="application/x-ndjson",
                 )
 
-        if not arquivos_log:
-            return JSONResponse({"erro": "Nenhum log disponível"}, status_code=404)
-
-        def chave_ordenacao_numerica(p):
-            nome = os.path.basename(p)
-            nums = re.findall(r"(\d+)", nome)
-            if not nums:
-                return nome
-            return int(nums[-1])
-
-        arquivos_ordenados = sorted(arquivos_log, key=chave_ordenacao_numerica)
-
-        if not hora_de and not hora_ate:
-            arquivos = arquivos_ordenados[:50]
-        else:
-            try:
-                hora_inicio = int(hora_de.split(":")[0]) if hora_de else 0
-            except Exception:
-                hora_inicio = 0
-
-            try:
-                hora_fim = int(hora_ate.split(":")[0]) if hora_ate else 23
-            except Exception:
-                hora_fim = 23
-
-            if hora_inicio <= hora_fim:
-                horas_incluir = set(range(hora_inicio, hora_fim + 1))
-            else:
-                horas_incluir = set(range(hora_inicio, 24)) | set(range(0, hora_fim + 1))
-
-            def hora_do_arquivo(p):
-                nome = os.path.basename(p)
-                m = re.search(r"(\d{1,2})(?=\D*\.log$)", nome)
-                if not m:
-                    nums = re.findall(r"(\d+)", nome)
-                    if not nums:
-                        return None
-                    return int(nums[-1]) % 24
-                try:
-                    return int(m.group(1)) % 24
-                except Exception:
-                    return None
-
-            arquivos_filtrados = []
-            for p in arquivos_ordenados:
-                h = hora_do_arquivo(p)
-                if h is None:
-                    continue
-                if h in horas_incluir:
-                    arquivos_filtrados.append(p)
-
-            arquivos = arquivos_filtrados[:50]
-
-        print(f"Arquivos selecionados (ordenados): {arquivos}")
-
-        hora_inicio_obj = parse_time_str(hora_de) if hora_de else None
-        hora_fim_obj = parse_time_str(hora_ate) if hora_ate else None
-
-        regex_palavra = None
-        if palavra_chave:
-            try:
-                regex_palavra = re.compile(palavra_chave, re.IGNORECASE)
-            except re.error:
-                regex_palavra = re.compile(re.escape(palavra_chave), re.IGNORECASE)
-
-        indice_inicio = max(0, (pagina - 1) * tamanho_pagina)
-        indice_fim = indice_inicio + tamanho_pagina
-
-        print(
-            f"Filtros: ip_nat={ip_nat}, porta_nat={porta_nat}, "
-            f"hora_de={hora_de}, hora_ate={hora_ate}, palavra_chave={palavra_chave}"
-        )
-        print(
-            f"Paginação: pagina={pagina}, tamanho_pagina={tamanho_pagina}, "
-            f"inicio={indice_inicio}, fim={indice_fim}"
-        )
-
-        def stream_logs():
-            contador_encontrados = 0
-
-            for arquivo in arquivos:
-                print("Lendo arquivo:", arquivo)
-
-                try:
-                    with open(arquivo, "r", errors="ignore") as fh:
-                        for raw_line in fh:
-                            line = raw_line.strip()
-
-                            if not line:
-                                continue
-
-                            if regex_palavra and not regex_palavra.search(line):
-                                continue
-
-                            parseado = parse_log_line(line)
-
-                            if not parseado:
-                                if ip_nat or porta_nat:
-                                    continue
-
-                                hora_match = re.search(
-                                    r"\b(\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\b",
-                                    line
-                                )
-                                if hora_match:
-                                    hora_str = hora_match.group(1)
-                                    hora_obj = parse_time_str(hora_str)
-                                    if hora_obj:
-                                        if hora_inicio_obj and hora_obj < hora_inicio_obj:
-                                            continue
-                                        if hora_fim_obj and hora_obj > hora_fim_obj:
-                                            continue
-
-                                parseado = {"linha": line}
-
-                            else:
-                                if ip_nat:
-                                    nat_field = parseado.get("nat", "")
-                                    nat_ip = nat_field.split(":")[0] if ":" in nat_field else nat_field
-                                    if nat_ip != ip_nat:
-                                        continue
-
-                                if porta_nat:
-                                    nat_field = parseado.get("nat", "")
-                                    if ":" in nat_field:
-                                        nat_port = nat_field.split(":")[1]
-                                        if nat_port != porta_nat:
-                                            continue
-                                    else:
-                                        continue
-
-                                hora_obj = None
-                                campo_data = parseado.get("data")
-
-                                if campo_data:
-                                    hora_match = re.search(
-                                        r"(\d{2}:\d{2}:\d{2}(?:\.\d+)?)",
-                                        campo_data
-                                    )
-                                    if hora_match:
-                                        hora_obj = parse_time_str(hora_match.group(1))
-
-                                if not hora_obj:
-                                    hora_match = re.search(
-                                        r"\b(\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\b",
-                                        line
-                                    )
-                                    if hora_match:
-                                        hora_obj = parse_time_str(hora_match.group(1))
-
-                                if (hora_inicio_obj or hora_fim_obj) and hora_obj:
-                                    if hora_inicio_obj and hora_obj < hora_inicio_obj:
-                                        continue
-                                    if hora_fim_obj and hora_obj > hora_fim_obj:
-                                        continue
-
-                                if (hora_inicio_obj or hora_fim_obj) and not hora_obj:
-                                    continue
-
-                            if indice_inicio <= contador_encontrados < indice_fim:
-                                out_obj = parseado if isinstance(parseado, dict) else {"linha": line}
-                                yield json.dumps(out_obj, ensure_ascii=False) + "\n"
-
-                            contador_encontrados += 1
-
-                            if contador_encontrados >= indice_fim:
-                                print("Alcançado limite de paginação, finalizando stream.")
-                                return
-
-                except Exception as e:
-                    print(f"Erro ao ler arquivo {arquivo}: {e}")
-                    continue
-
-            print("Fim dos arquivos. Total achados:", contador_encontrados)
-
-        return StreamingResponse(
-            stream_logs(),
-            media_type="application/x-ndjson"
-        )
+        return JSONResponse({"erro": "Nenhum log disponível"}, status_code=404)
 
     except subprocess.TimeoutExpired:
         return JSONResponse({"erro": "Processamento demorou demais"}, status_code=504)
-    except Exception as e:
-        return JSONResponse({"erro": str(e)}, status_code=500)
+    except Exception as exc:
+        return JSONResponse({"erro": str(exc)}, status_code=500)

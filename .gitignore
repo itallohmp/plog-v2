@@ -14,3 +14,5 @@ __pycache__/
 .sudo_as_admin_successful
 .wget-hsts
 .dotnet/corefx/cryptography/crls/
+.cursor/
+.cursor-server/

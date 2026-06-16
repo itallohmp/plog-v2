@@ -8,63 +8,95 @@
 </head>
 <body class="body_plog">
   <header class="site_header">
-    <img src="/static/img/logo.png" alt="Logo PLog" class="logo">
+    <div class="brand">
+      <img src="/static/img/logo.png" alt="Logo PLog" class="logo">
+      <div>
+        <strong>PLOG</strong>
+        <span>Consulta de flows PCAP</span>
+      </div>
+    </div>
     <ul>
       <li><a href="/index.html">Página Inicial</a></li>
     </ul>
   </header>
 
-  <main>
-    <div class="filtros">
-      <label for="pageSize">Linhas por página:</label>
-      <select id="pageSize">
-        <option value="50">50</option>
-        <option value="100" selected>100</option>
-        <option value="200">200</option>
-      </select>
+  <main class="plog_shell">
+    <section class="hero_card">
+      <p class="eyebrow">Servidor 10.10.10.53 / var/flows/rj02bd01</p>
+      <h1>Filtro de flows PCAP</h1>
+      <p>Consulte eventos NAT por IP, porta e data usando os arquivos JSON de flows.</p>
+    </section>
 
-      <label for="ip_rota">Origem:</label>
-      <select id="ip_rota">
-        <option value="">Carregando origens...</option>
-      </select>
+    <section class="filter_card" aria-labelledby="filterTitle">
+      <div class="section_header">
+        <div>
+          <h2 id="filterTitle">Filtros</h2>
+          <p>Informe pelo menos um IP ou porta para refinar a busca.</p>
+        </div>
+        <span id="status" class="status_badge" aria-live="polite">Pronto para buscar</span>
+      </div>
 
-      <label for="ip">IP (NAT): </label>
-      <input type="text" id="ip" placeholder="Ex: 177.137.21.38">
+      <form class="filtros" id="filterForm">
+        <div class="field">
+          <label for="ip">IP</label>
+          <input type="text" id="ip" inputmode="decimal" placeholder="Ex: 177.137.21.3">
+        </div>
 
-      <label for="porta">Porta (NAT): </label>
-      <input type="text" id="porta" placeholder="Ex: 42857">
+        <div class="field">
+          <label for="porta">Porta</label>
+          <input type="number" id="porta" min="0" max="65535" placeholder="Ex: 39936">
+        </div>
 
-      <label for="keyword">Chave: </label>
-      <input type="text" id="keyword" placeholder="Ex: TCP, UDP, DESTINO..">
+        <div class="field">
+          <label for="day">Data</label>
+          <input type="date" id="day">
+        </div>
 
-      <label for="day">Dia: </label>
-      <input type="date" id="day">
+        <div class="field">
+          <label for="pageSize">Linhas</label>
+          <select id="pageSize">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+          </select>
+        </div>
 
-      <label for="hour_from">Hora de: </label>
-      <input type="time" id="hour_from">
+        <button id="btnBuscar" class="primary_button" type="submit">Buscar flows</button>
+      </form>
+    </section>
 
-      <label for="hour_to">Até: </label>
-      <input type="time" id="hour_to">
+    <section class="results_card" aria-labelledby="resultsTitle">
+      <div class="section_header">
+        <div>
+          <h2 id="resultsTitle">Resultados</h2>
+          <p id="resultSummary">Nenhuma busca executada.</p>
+        </div>
+        <div id="pagination" class="pagination"></div>
+      </div>
 
-      <button id="btnBuscar" type="button">Buscar</button>
-      <span id="status" aria-live="polite" style="margin-left: 10px;"></span>
-    </div>
-
-    <table id="tabelaLogs">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Protocolo</th>
-          <th>Origem</th>
-          <th>NAT</th>
-          <th>Destino</th>
-          <th>Destino Final</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div id="pagination"></div>
+      <div class="table_wrap">
+        <table id="tabelaLogs">
+          <caption>Eventos PCAP encontrados</caption>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Evento</th>
+              <th>Protocolo</th>
+              <th>Origem</th>
+              <th>NAT</th>
+              <th>Bloco Portas</th>
+              <th>Destino</th>
+              <th>Roteador</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="empty_row">
+              <td colspan="8">Use os filtros acima para buscar flows.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <footer id="rodape">
