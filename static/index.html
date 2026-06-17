@@ -13,22 +13,44 @@
     <header class="site_header_index">
         <nav class="nav_index">
             <a href="/" class="nav_index__brand">PLOG</a>
+            <span class="nav_index__status">
+                <span class="nav_index__status-dot" aria-hidden="true"></span>
+                Sistema Online
+            </span>
         </nav>
     </header>
     <main class="main_index">
         <section class="hero_index">
             <div class="hero_index__glow" aria-hidden="true"></div>
             <div class="hero_index__card">
+                <span class="logo_ring logo_ring--outer" aria-hidden="true"></span>
+                <span class="logo_ring logo_ring--inner" aria-hidden="true"></span>
+                <span class="logo_orbit" aria-hidden="true"><span class="logo_orbit__dot"></span></span>
+                <span class="logo_orbit logo_orbit--alt" aria-hidden="true"><span class="logo_orbit__dot"></span></span>
+                <span class="logo_pulse" aria-hidden="true"></span>
                 <img src="/img/logo.png" alt="Logo PLog" class="logo_index">
             </div>
             <p class="hero_index__eyebrow">Análise de flows de rede</p>
-            <h1 class="hero_index__title">PLog</h1>
             <p class="hero_index__subtitle">Consulta estruturada de logs com filtros por data, IP e porta.</p>
-            <a href="plog.html" class="hero_index__cta">Acessar sistema</a>
+
+            <a href="plog.html" class="hero_index__cta">
+                Acessar sistema
+                <span class="hero_index__cta-arrow" aria-hidden="true">→</span>
+            </a>
         </section>
     </main>
-    <footer id="rodape_index">
-        <h3>©2025 Interativa Fibra & Energia Ltda.<span id="span_rodape"> Todos os direitos reservados. CNPJ 38.174.307/0001-81</span></h3>
+    <footer id="rodape_index" class="footer_index">
+        <div class="footer_index__inner">
+            <div class="footer_index__brand">
+                <span class="footer_index__logo">PLOG</span>
+                <span class="footer_index__tag">Network Flow Analytics</span>
+            </div>
+            <p class="footer_index__copy">
+                ©2025 Interativa Fibra &amp; Energia Ltda.
+                <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
+            </p>
+            <span class="footer_index__meta">v2.0 · Itallo Polito</span>
+        </div>
     </footer>
     <script src="/script.js"></script>
 </body>
