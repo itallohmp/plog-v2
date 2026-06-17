@@ -630,8 +630,8 @@ button:disabled {
   box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
-/* #tabelaLogs td:nth-child(1),
-#tabelaLogs td:nth-child(2), */
+#tabelaLogs td:nth-child(1),
+#tabelaLogs td:nth-child(2),
 #tabelaLogs td:nth-child(3),
 #tabelaLogs td:nth-child(4),
 #tabelaLogs td:nth-child(5),
