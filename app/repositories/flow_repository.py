@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 import paramiko
-
 from app.core import config
 
 
@@ -87,7 +86,7 @@ class FlowRepository:
                 entradas = sftp.listdir(day_dir)
             except IOError as exc:
                 raise FlowNotFoundError(
-                    f"Diretorio nao encontrado para a data: {day_dir}"
+                    f"Diretorio nao encontrado para a data indicada, verifique se a data e valida."  # {day_dir}
                 ) from exc
         finally:
             sftp.close()
@@ -108,22 +107,17 @@ class FlowRepository:
         self, client: paramiko.SSHClient, directory: str
     ) -> List[Dict[str, Any]]:
         comando = (
-            f"{shlex.quote(config.NFDUMP_BIN)} "
-            f"-R {shlex.quote(directory)} -o json"
+            f"{shlex.quote(config.NFDUMP_BIN)} " f"-R {shlex.quote(directory)} -o json"
         )
 
-        _, stdout, stderr = client.exec_command(
-            comando, timeout=config.NFDUMP_TIMEOUT
-        )
+        _, stdout, stderr = client.exec_command(comando, timeout=config.NFDUMP_TIMEOUT)
 
         saida = stdout.read().decode("utf-8", errors="ignore")
         erro = stderr.read().decode("utf-8", errors="ignore")
         status = stdout.channel.recv_exit_status()
 
         if status != 0:
-            raise FlowQueryError(
-                f"nfdump falhou em {directory}: {erro.strip()}"
-            )
+            raise FlowQueryError(f"nfdump falhou em {directory}: {erro.strip()}")
 
         return self._parse_nfdump_json(saida)
 
@@ -172,9 +166,7 @@ class FlowRepository:
                 "Instale o nfdump ou defina PLOG_NFDUMP_LOCAL_BIN."
             ) from exc
         except subprocess.TimeoutExpired as exc:
-            raise FlowQueryError(
-                f"nfdump local expirou ao ler {arquivo.name}"
-            ) from exc
+            raise FlowQueryError(f"nfdump local expirou ao ler {arquivo.name}") from exc
 
         if resultado.returncode != 0:
             raise FlowQueryError(
