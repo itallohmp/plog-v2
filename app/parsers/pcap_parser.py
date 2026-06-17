@@ -33,7 +33,7 @@ def _port_block(event: Dict[str, Any]) -> str:
     start = _as_int(event.get("pblock_start"))
     size = _as_int(event.get("pblock_size"))
 
-    end = start - size - 1
+    end = start + size - 1
     if start in (None, "") and end in (None, ""):
         return ""
     if start == end or end in (None, ""):
