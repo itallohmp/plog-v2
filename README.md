@@ -20,10 +20,10 @@ A aplicação permite:
 
 Nenhuma credencial fica no código. Configure no servidor:
 
-- `PLOG_FLOW_SSH_HOST` (padrão `10.10.10.53`), `PLOG_FLOW_SSH_PORT`, `PLOG_FLOW_SSH_USER`
+- `PLOG_FLOW_SSH_HOST` , `PLOG_FLOW_SSH_PORT`, `PLOG_FLOW_SSH_USER`
 - `PLOG_FLOW_SSH_KEY_PATH` (recomendado) ou `PLOG_FLOW_SSH_PASSWORD`
 - `PLOG_FLOW_SSH_KNOWN_HOSTS` (recomendado para validar o host)
-- `PLOG_FLOW_REMOTE_DIR` (padrão `/var/flows/rj02bd01`)
+- `PLOG_FLOW_REMOTE_DIR` 
 - `PLOG_FLOW_DAY_DIR_FORMAT` (padrão `%Y-%m-%d`)
 - `PLOG_NFDUMP_BIN` (padrão `nfdump`), `PLOG_NFDUMP_TIMEOUT`
 - `PLOG_FLOW_LOCAL_PATH` (opcional): caminho de um arquivo JSON ou pasta com `.json` para testes locais sem SSH/VPN. Quando definido, o backend lê desse caminho em vez de conectar no servidor.
