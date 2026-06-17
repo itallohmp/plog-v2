@@ -1,0 +1,33 @@
+[
+  {
+    "type": "EVENT",
+    "t_first": "2026-06-14T20:59:58.760",
+    "proto": 17,
+    "src4_addr": "100.64.11.204",
+    "dst4_addr": "8.8.8.8",
+    "src_port": 54321,
+    "dst_port": 53,
+    "ip4_router": "10.0.0.1"
+  },
+  {
+    "type": "EVENT",
+    "t_first": "2026-06-14T21:15:00.000",
+    "proto": 6,
+    "src4_addr": "192.168.1.10",
+    "src4_xlt_ip": "203.0.113.50",
+    "dst4_addr": "1.1.1.1",
+    "src_port": 443,
+    "dst_port": 8443
+  },
+  {
+    "type": "EVENT",
+    "t_first": "2026-06-15T08:30:00.000",
+    "proto": 17,
+    "src4_addr": "10.10.10.100",
+    "dst4_addr": "172.16.0.1",
+    "src_port": 10000,
+    "dst_port": 53,
+    "pblock_start": 10000,
+    "pblock_end": 10010
+  }
+]

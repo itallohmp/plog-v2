@@ -1,7 +1,8 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
@@ -14,7 +15,16 @@ from app.schemas.flow import FlowQuery, FlowResponse
 from app.services.flow_service import FlowService
 
 router = APIRouter()
-service = FlowService(FlowRepository())
+
+
+def get_flow_repository() -> FlowRepository:
+    return FlowRepository()
+
+
+def get_flow_service(
+    repository: FlowRepository = Depends(get_flow_repository),
+) -> FlowService:
+    return FlowService(repository)
 
 
 @router.get("/flows", response_model=FlowResponse)
@@ -26,6 +36,7 @@ def listar_flows(
     hora_ate: Optional[int] = Query(None, ge=0, le=23),
     pagina: int = Query(1, ge=1),
     tamanho_pagina: int = Query(100, ge=1, le=1000),
+    service: FlowService = Depends(get_flow_service),
 ):
     try:
         query = FlowQuery(
@@ -39,7 +50,7 @@ def listar_flows(
         )
     except ValidationError as exc:
         return JSONResponse(
-            {"erro": "Parametros invalidos", "detalhes": exc.errors()},
+            {"erro": "Parametros invalidos", "detalhes": jsonable_encoder(exc.errors())},
             status_code=422,
         )
 
