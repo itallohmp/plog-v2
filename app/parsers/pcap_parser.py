@@ -30,8 +30,10 @@ def _protocol_name(value: Any) -> str:
 
 
 def _port_block(event: Dict[str, Any]) -> str:
-    start = event.get("pblock_start")
-    end = event.get("pblock_end")
+    start = _as_int(event.get("pblock_start"))
+    size = _as_int(event.get("pblock_size"))
+
+    end = start - size - 1
     if start in (None, "") and end in (None, ""):
         return ""
     if start == end or end in (None, ""):

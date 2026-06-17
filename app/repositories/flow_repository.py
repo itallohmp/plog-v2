@@ -209,3 +209,4 @@ class FlowRepository:
             if isinstance(item, dict):
                 eventos.append(item)
         return eventos
+        return eventos
