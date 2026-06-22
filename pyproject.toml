@@ -12,7 +12,9 @@ dependencies = [
     "paramiko (>=5.0.0,<6.0.0)",
     "uvicorn (>=0.49.0,<0.50.0)",
     "wsl (>=0.12,<0.13)",
-    "python-dotenv (>=1.2.2,<2.0.0)"
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "pydantic (>=2.13.4,<3.0.0)",
+    "alembic (>=1.18.4,<2.0.0)"
 ]
 
 

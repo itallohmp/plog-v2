@@ -48,7 +48,9 @@ class TestFlowService:
         assert resposta.registros == []
 
     def test_propaga_erro_do_repository(self, flow_service, mock_repository):
-        mock_repository.fetch_raw_flows.side_effect = FlowNotFoundError("nao encontrado")
+        mock_repository.fetch_raw_flows.side_effect = FlowNotFoundError(
+            "nao encontrado"
+        )
 
         query = FlowQuery(data=date(2026, 6, 14))
 
