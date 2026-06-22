@@ -29,14 +29,21 @@ def _protocol_name(value: Any) -> str:
     return PROTOCOLOS.get(proto_number, str(proto_number))
 
 
-def _port_block(event: Dict[str, Any]) -> str:
+def _port_block_limits(event: Dict[str, Any]) -> tuple[Optional[int], Optional[int]]:
     start = _as_int(event.get("pblock_start"))
     size = _as_int(event.get("pblock_size"))
 
-    end = start + size - 1
-    if start in (None, "") and end in (None, ""):
+    if start is not None and size is not None:
+        return start, start + size - 1
+
+    return start, _as_int(event.get("pblock_end"))
+
+
+def _port_block(event: Dict[str, Any]) -> str:
+    start, end = _port_block_limits(event)
+    if start is None and end is None:
         return ""
-    if start == end or end in (None, ""):
+    if start == end or end is None:
         return str(start)
     return f"{start}-{end}"
 
@@ -110,8 +117,7 @@ def pcap_event_matches(
             _as_int(event.get("src_xlt_port")),
             _as_int(event.get("dst_xlt_port")),
         }
-        block_start = _as_int(event.get("pblock_start"))
-        block_end = _as_int(event.get("pblock_end"))
+        block_start, block_end = _port_block_limits(event)
         in_block = (
             block_start is not None
             and block_end is not None
