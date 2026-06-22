@@ -29,3 +29,4 @@ logs/
 .agents/
 **agents/
 alembic.ini
+**github/
