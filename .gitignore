@@ -24,3 +24,10 @@ __pycache__/
 */logs/
 */nfcapd*
 logs/
+.alembic/
+**alembic/
+.agents/
+**agents/
+alembic.ini
+**github/
+.vscode/
