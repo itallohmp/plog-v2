@@ -27,3 +27,6 @@ logs/
 script.py.mako
 agents/
 .agents/
+.vscode
+.github/
+.gitignore
