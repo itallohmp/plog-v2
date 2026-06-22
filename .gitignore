@@ -24,3 +24,6 @@ __pycache__/
 */logs/
 */nfcapd*
 logs/
+script.py.mako
+agents/
+.agents/
