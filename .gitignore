@@ -1,3 +1,4 @@
+*.db
 venv/
 __pycache__/
 .bashrc
@@ -31,3 +32,4 @@ logs/
 alembic.ini
 **github/
 .vscode/
+vscode/

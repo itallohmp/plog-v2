@@ -1,7 +1,22 @@
-from sqlalchemy import DeclarativeBase, create_engine
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-db = create_engine(
-    "sqlite:///database/plog.db"
-)  # sqlite é um banco de dados leve e fácil de usar
+engine = create_engine(
+    "sqlite:///app/database/plog.db",
+    connect_args={"check_same_thread": False},
+)
 
-Base = DeclarativeBase()
+Base = declarative_base()
+
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+
+def get_db():
+    session = SessionLocal()
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
