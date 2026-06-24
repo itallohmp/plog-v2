@@ -873,6 +873,156 @@ body {
   color: #111827;
 }
 
+.nav_admin {
+  display: block;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 102, 0, 0.45);
+  background: rgba(255, 102, 0, 0.12);
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.nav_admin:hover {
+  background-color: var(--color-accent);
+  color: #111827;
+}
+
+.filtros--painel {
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  align-items: end;
+}
+
+.field--checkbox-compact {
+  justify-content: end;
+  min-width: 140px;
+}
+
+.checkbox_label--compact {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox_label--compact input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.user_actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.user_status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user_status.table_btn--active {
+  background: #e7f8ee;
+  color: #14703d;
+  border: 1px solid rgba(20, 112, 61, 0.15);
+}
+
+.user_status.table_btn--inactive {
+  background: #fde8e8;
+  color: #a11717;
+  border: 1px solid rgba(161, 23, 23, 0.15);
+}
+
+.table_btn {
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.table_btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.table_btn--danger {
+  color: #a11717;
+  border-color: rgba(161, 23, 23, 0.2);
+  background: #fff5f5;
+}
+
+.table_btn--danger:hover:not(:disabled) {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.table_btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#usersTable {
+  min-width: 860px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#usersTable caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+#usersTable th,
+#usersTable td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 13px 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+#usersTable th {
+  background: #f0f4fa;
+  color: #344054;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#usersTable td:nth-child(1) {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
 .plog_shell {
   position: relative;
   z-index: 1;
@@ -1390,6 +1540,10 @@ main {
   }
 
   .filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .filtros--painel {
     grid-template-columns: 1fr;
   }
 

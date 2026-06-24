@@ -1,35 +1,81 @@
+# --- Ambiente e segredos ---
+.env
+.env.*
+!.env.example
+
+# --- Banco de dados ---
 *.db
-venv/
+*.sqlite
+*.sqlite3
+app/database/*.db
+
+# --- SSH, certificados e credenciais ---
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+known_hosts
+secrets/
+credentials/
+
+# --- Python ---
 __pycache__/
-.bashrc
-.bash_history
-.ssh/
-.cache/
-.vscode-server/
-.copilot/
-*.log
-.coverage
+*.py[cod]
+*$py.class
+venv/
+.venv/
 .pytest_cache/
-.bash_logout
-.gitconfig
-.lesshst
-.profile
-.sudo_as_admin_successful
-.wget-hsts
-.dotnet/corefx/cryptography/crls/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.poetry/
+
+# --- Logs e dados de runtime ---
+*.log
+logs/
+**/nfcapd*
+*.pcap
+*.pcapng
+*.json.gz
+data/
+tmp/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
 .cursor/
 .cursor-server/
 .cursor-skills/
-**cursor/
-**.env
-*/logs/
-*/nfcapd*
-logs/
-.alembic/
-**alembic/
-.agents/
-**agents/
+*.swp
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Config local (override) ---
+config.local.*
+local_settings.py
+
+
+# create user
+create_user.py
+
+# alembic
 alembic.ini
-**github/
-.vscode/
-vscode/
+alembic/
+
+# requirements
+requirements.txt
+
+# pyproject.toml
+pyproject.toml
+
+# .cursor

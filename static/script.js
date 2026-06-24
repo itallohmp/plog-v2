@@ -1,6 +1,7 @@
 const API_PREFIX = "/api";
 const TOKEN_KEY = "plog_access_token";
 const REFRESH_KEY = "plog_refresh_token";
+const ADMIN_KEY = "plog_user_admin";
 
 let currentPage = 1;
 let currentTotalPages = 1;
@@ -22,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function initPlogPage() {
   initLogoutButtons();
+  loadAdminNav();
   setDefaultDate();
   renderPagination(1, 1);
 
@@ -30,6 +32,31 @@ function initPlogPage() {
     event.preventDefault();
     buscarLogs(1);
   });
+}
+
+async function loadAdminNav() {
+  const navItem = document.getElementById("adminNavItem");
+  if (!navItem) return;
+
+  try {
+    const resp = await fetchWithAuth(`${API_PREFIX}/auth/me`);
+    const user = await parseJsonResponse(resp);
+
+    if (!resp.ok) return;
+
+    setUserAdmin(Boolean(user?.admin));
+    navItem.hidden = !user?.admin;
+  } catch (err) {
+    console.error("Erro ao verificar perfil:", err);
+  }
+}
+
+function setUserAdmin(isAdmin) {
+  localStorage.setItem(ADMIN_KEY, isAdmin ? "1" : "0");
+}
+
+function isUserAdmin() {
+  return localStorage.getItem(ADMIN_KEY) === "1";
 }
 
 function initLogoutButtons() {
@@ -78,6 +105,7 @@ function setTokens(accessToken, refreshToken) {
 function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(ADMIN_KEY);
 }
 
 function authHeaders(extra = {}) {
@@ -171,6 +199,7 @@ async function handleLogin(event) {
     }
 
     setTokens(payload.access_token, payload.refresh_token);
+    setUserAdmin(Boolean(payload.admin));
     window.location.href = "/plog.html";
   } catch (err) {
     console.error("Erro no login:", err);
@@ -199,6 +228,7 @@ async function refreshAccessToken() {
     if (!payload?.access_token) return false;
 
     setTokens(payload.access_token, payload.refresh_token);
+    setUserAdmin(Boolean(payload.admin));
     return true;
   } catch (err) {
     console.error("Erro ao renovar token:", err);

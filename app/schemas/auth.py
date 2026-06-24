@@ -21,10 +21,34 @@ class UserResponse(_BaseSchema):
     username: str
 
 
+class UserMeResponse(_BaseSchema):
+    id: int
+    email: str
+    username: str
+    admin: bool
+
+
+class UserListItem(_BaseSchema):
+    id: int
+    email: str
+    username: str
+    admin: bool
+    ativo: bool
+
+
+class AdminUserCreate(UserCreate):
+    admin: bool = False
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str | None = None
     token_type: str = "bearer"
+    admin: bool = False
 
 
 class LogoutResponse(BaseModel):

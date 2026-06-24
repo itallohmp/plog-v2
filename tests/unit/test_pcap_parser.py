@@ -1,13 +1,9 @@
 from datetime import date
 
 import pytest
-from pydantic import ValidationError
-
-from app.parsers.pcap_parser import (
-    normalize_pcap_event,
-    pcap_event_matches,
-)
+from app.parsers.pcap_parser import normalize_pcap_event, pcap_event_matches
 from app.schemas.flow import FlowQuery
+from pydantic import ValidationError
 
 
 class TestNormalizePcapEvent:

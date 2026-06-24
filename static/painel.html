@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PLog — Painel Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="body_plog">
+  <header class="site_header">
+    <div class="brand">
+      <img src="/img/logo.png" alt="Logo PLog" class="logo">
+      <div>
+        <strong>PLOG</strong>
+        <span>Painel administrativo</span>
+      </div>
+    </div>
+    <ul class="site_header__nav">
+      <li><a href="/plog.html">Consulta de flows</a></li>
+      <li><a href="/index.html">Página Inicial</a></li>
+      <li>
+        <button type="button" class="nav_logout" data-logout>Sair</button>
+      </li>
+    </ul>
+  </header>
+
+  <main class="plog_shell" id="painelApp">
+    <section class="hero_card hero_card--compact" aria-label="Painel administrativo">
+      <p class="eyebrow">Administração</p>
+      <h1>Painel de usuários</h1>
+      <p>Gerencie contas de acesso ao sistema PLog.</p>
+    </section>
+
+    <section class="filter_card" aria-labelledby="createUserTitle">
+      <div class="section_header">
+        <div>
+          <h2 id="createUserTitle">Novo usuário</h2>
+          <p>Cadastre login, e-mail e senha. Apenas administradores acessam este painel.</p>
+        </div>
+        <span id="painelStatus" class="status_badge" aria-live="polite">Pronto</span>
+      </div>
+
+      <div id="painelMessage" class="auth_message" hidden role="alert"></div>
+
+      <form class="filtros filtros--painel" id="createUserForm">
+        <div class="field">
+          <label for="newUsername">Usuário</label>
+          <input type="text" id="newUsername" name="username" required autocomplete="off" placeholder="Ex: joao.silva">
+        </div>
+
+        <div class="field">
+          <label for="newEmail">E-mail</label>
+          <input type="email" id="newEmail" name="email" required autocomplete="off" placeholder="Ex: joao@empresa.com">
+        </div>
+
+        <div class="field">
+          <label for="newPassword">Senha</label>
+          <input type="password" id="newPassword" name="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres">
+        </div>
+
+        <div class="field field--checkbox field--checkbox-compact">
+          <label class="checkbox_label checkbox_label--compact">
+            <input type="checkbox" id="newAdmin" name="admin">
+            Administrador
+          </label>
+        </div>
+
+        <button type="submit" class="primary_button" id="btnCreateUser">Cadastrar usuário</button>
+      </form>
+    </section>
+
+    <section class="results_card" aria-labelledby="usersTitle">
+      <div class="section_header">
+        <div>
+          <h2 id="usersTitle">Usuários cadastrados</h2>
+          <p id="usersSummary">Carregando usuários...</p>
+        </div>
+      </div>
+
+      <div class="table_wrap">
+        <table id="usersTable">
+          <caption>Lista de usuários do sistema</caption>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuário</th>
+              <th>E-mail</th>
+              <th>Admin</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="empty_row">
+              <td colspan="6">Carregando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer id="rodape">
+    <div class="rodape__left">
+      <span class="rodape__status" aria-hidden="true"></span>
+      <h3>
+        ©2025 Interativa Fibra &amp; Energia Ltda.
+        <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
+      </h3>
+    </div>
+    <img src="/img/logointerativa.png" alt="Logo Interativa" class="logointerativa">
+  </footer>
+
+  <script src="/script.js"></script>
+  <script src="/painel.js"></script>
+</body>
+</html>

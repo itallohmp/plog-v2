@@ -1,11 +1,6 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
-
 from app.core.security import verificar_token_acesso
 from app.models.user import User
 from app.repositories.flow_repository import (
@@ -15,6 +10,10 @@ from app.repositories.flow_repository import (
 )
 from app.schemas.flow import FlowQuery, FlowResponse
 from app.services.flow_service import FlowService
+from fastapi import APIRouter, Depends, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 router = APIRouter()
 

@@ -83,3 +83,12 @@ def verificar_token_refresh(
     token: str = Depends(oauth2_scheme), session: Session = Depends(get_db)
 ):
     return _obter_usuario_do_token(token, session, "refresh")
+
+
+def verificar_admin(usuario: User = Depends(verificar_token_acesso)) -> User:
+    if not usuario.admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso restrito a administradores.",
+        )
+    return usuario

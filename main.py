@@ -10,16 +10,16 @@ from app.core.config import ALLOWED_ORIGINS, API_PREFIX
 app = FastAPI(
     title="PLOG",
     version="0.2.0",
-    docs_url="api/docs",
-    redoc_url="api/redoc",
-    openapi_url="api/openapi.json",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
