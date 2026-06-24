@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PLog — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="body_login">
+    <header class="site_header_login">
+        <nav class="nav_login">
+            <a href="/index.html" class="nav_login__brand">PLOG</a>
+            <a href="/index.html" class="nav_login__back">← Voltar</a>
+        </nav>
+    </header>
+
+    <main class="main_login">
+        <section class="auth_card" aria-label="Autenticação">
+            <div class="auth_card__header">
+                <p class="eyebrow">Sistema PLog</p>
+                <h1>Acesso ao sistema</h1>
+                <p class="auth_card__subtitle">Entre com suas credenciais para consultar flows de rede.</p>
+            </div>
+
+            <div class="auth_tabs" role="tablist" aria-label="Modo de autenticação">
+                <button
+                    type="button"
+                    class="auth_tab auth_tab--active"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="loginPanel"
+                    id="loginTab"
+                >
+                    Login
+                </button>
+            </div>
+
+            <div
+                class="auth_panel"
+                id="loginPanel"
+                role="tabpanel"
+                aria-labelledby="loginTab"
+            >
+                <div id="loginMessage" class="auth_message" hidden role="alert"></div>
+
+                <form class="login_form" id="loginForm" novalidate>
+                    <div class="field">
+                        <label for="username">Usuário</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            autocomplete="username"
+                            placeholder="Seu login"
+                            required
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Senha</label>
+                        <div class="field_password">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                autocomplete="current-password"
+                                placeholder="Sua senha"
+                                required
+                            >
+                            <button
+                                type="button"
+                                class="field_password__toggle"
+                                id="togglePassword"
+                                aria-label="Mostrar senha"
+                                aria-pressed="false"
+                            >
+                                Mostrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="auth_submit" id="btnLogin">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer id="rodape_login" class="footer_login">
+        <div class="footer_login__inner">
+            <div class="footer_login__brand">
+                <span class="footer_login__logo">PLOG</span>
+                <span class="footer_login__tag">Network Flow Analytics</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/script.js"></script>
+</body>
+</html>

@@ -1,24 +1,256 @@
 const API_PREFIX = "/api";
+const TOKEN_KEY = "plog_access_token";
+const REFRESH_KEY = "plog_refresh_token";
+
 let currentPage = 1;
 let currentTotalPages = 1;
 let currentController = null;
 
 document.addEventListener("DOMContentLoaded", function () {
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) {
+    initLoginPage();
+    return;
+  }
+
+  const filterForm = document.getElementById("filterForm");
+  if (filterForm) {
+    if (!requireAuth()) return;
+    initPlogPage();
+  }
+});
+
+function initPlogPage() {
+  initLogoutButtons();
   setDefaultDate();
   renderPagination(1, 1);
 
-  const form = document.getElementById("filterForm");
-  const btn = document.getElementById("btnBuscar");
+  const filterForm = document.getElementById("filterForm");
+  filterForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    buscarLogs(1);
+  });
+}
 
-  if (form) {
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      buscarLogs(1);
-    });
-  } else if (btn) {
-    btn.addEventListener("click", () => buscarLogs(1));
+function initLogoutButtons() {
+  document.querySelectorAll("[data-logout]").forEach((button) => {
+    button.addEventListener("click", handleLogout);
+  });
+}
+
+async function handleLogout(event) {
+  event.preventDefault();
+
+  const button = event.currentTarget;
+  if (button) button.disabled = true;
+
+  try {
+    const token = getAccessToken();
+    if (token) {
+      await fetch(`${API_PREFIX}/auth/logout`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+    }
+  } catch (err) {
+    console.error("Erro no logout:", err);
+  } finally {
+    clearTokens();
+    window.location.href = "/index.html";
   }
-});
+}
+
+function getAccessToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+function setTokens(accessToken, refreshToken) {
+  localStorage.setItem(TOKEN_KEY, accessToken);
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_KEY, refreshToken);
+  }
+}
+
+function clearTokens() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+function authHeaders(extra = {}) {
+  const headers = { Accept: "application/json", ...extra };
+  const token = getAccessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function requireAuth() {
+  if (!getAccessToken()) {
+    window.location.href = "/login.html";
+    return false;
+  }
+  return true;
+}
+
+function initLoginPage() {
+  if (getAccessToken()) {
+    window.location.href = "/plog.html";
+    return;
+  }
+
+  const form = document.getElementById("loginForm");
+  const togglePassword = document.getElementById("togglePassword");
+  const passwordInput = document.getElementById("password");
+
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("click", () => {
+      const isHidden = passwordInput.type === "password";
+      passwordInput.type = isHidden ? "text" : "password";
+      togglePassword.textContent = isHidden ? "Ocultar" : "Mostrar";
+      togglePassword.setAttribute("aria-pressed", String(isHidden));
+      togglePassword.setAttribute("aria-label", isHidden ? "Ocultar senha" : "Mostrar senha");
+    });
+  }
+
+  form.addEventListener("submit", handleLogin);
+}
+
+function showLoginMessage(message, state = "error") {
+  const messageEl = document.getElementById("loginMessage");
+  if (!messageEl) return;
+
+  messageEl.hidden = false;
+  messageEl.textContent = message;
+  messageEl.dataset.state = state;
+}
+
+function hideLoginMessage() {
+  const messageEl = document.getElementById("loginMessage");
+  if (!messageEl) return;
+  messageEl.hidden = true;
+  messageEl.textContent = "";
+  delete messageEl.dataset.state;
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  hideLoginMessage();
+
+  const username = document.getElementById("username")?.value.trim();
+  const password = document.getElementById("password")?.value || "";
+  const submitBtn = document.getElementById("btnLogin");
+
+  if (!username || !password) {
+    showLoginMessage("Informe usuário e senha.");
+    return;
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const resp = await fetch(`${API_PREFIX}/auth/login`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, senha: password }),
+    });
+
+    const payload = await parseJsonResponse(resp);
+
+    if (!resp.ok) {
+      const detail = extractErrorDetail(payload);
+      showLoginMessage(detail || "Não foi possível entrar. Tente novamente.");
+      return;
+    }
+
+    setTokens(payload.access_token, payload.refresh_token);
+    window.location.href = "/plog.html";
+  } catch (err) {
+    console.error("Erro no login:", err);
+    showLoginMessage("Erro de conexão com o servidor.");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function refreshAccessToken() {
+  const token = getRefreshToken();
+  if (!token) return false;
+
+  try {
+    const resp = await fetch(`${API_PREFIX}/auth/refresh`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!resp.ok) return false;
+
+    const payload = await parseJsonResponse(resp);
+    if (!payload?.access_token) return false;
+
+    setTokens(payload.access_token, payload.refresh_token);
+    return true;
+  } catch (err) {
+    console.error("Erro ao renovar token:", err);
+    return false;
+  }
+}
+
+async function fetchWithAuth(url, options = {}) {
+  const requestOptions = {
+    ...options,
+    headers: authHeaders(options.headers || {}),
+  };
+
+  let resp = await fetch(url, requestOptions);
+
+  if (resp.status !== 401) {
+    return resp;
+  }
+
+  const refreshed = await refreshAccessToken();
+  if (!refreshed) {
+    clearTokens();
+    window.location.href = "/login.html";
+    return resp;
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: authHeaders(options.headers || {}),
+  });
+}
+
+async function parseJsonResponse(resp) {
+  const text = await resp.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn("Resposta não-JSON:", err, text);
+    return null;
+  }
+}
+
+function extractErrorDetail(payload) {
+  if (!payload) return null;
+  if (typeof payload.detail === "string") return payload.detail;
+  if (Array.isArray(payload.detail) && payload.detail[0]?.msg) {
+    return payload.detail[0].msg;
+  }
+  if (payload.erro) return payload.erro;
+  return null;
+}
 
 function setDefaultDate() {
   const day = document.getElementById("day");
@@ -127,6 +359,8 @@ function renderPagination(page, totalPages) {
 }
 
 async function buscarLogs(page = 1) {
+  if (!requireAuth()) return;
+
   if (currentController) {
     currentController.abort();
     currentController = null;
@@ -155,17 +389,13 @@ async function buscarLogs(page = 1) {
   const signal = currentController.signal;
 
   try {
-    const resp = await fetch(url, {
-      signal,
-      headers: { Accept: "application/json" },
-    });
+    const resp = await fetchWithAuth(url, { signal });
+    const payload = await parseJsonResponse(resp);
 
-    const text = await resp.text();
-    let payload = null;
-    try {
-      payload = text ? JSON.parse(text) : null;
-    } catch (e) {
-      console.warn("Resposta não-JSON:", e, text);
+    if (resp.status === 401) {
+      setStatus("Sessão expirada. Redirecionando...", "error");
+      renderEmptyRow("Faça login novamente para continuar.");
+      return;
     }
 
     if (!resp.ok) {
@@ -210,6 +440,9 @@ async function buscarLogs(page = 1) {
 }
 
 function formatError(payload, status) {
+  const detail = extractErrorDetail(payload);
+  if (detail) return detail;
+
   if (payload && payload.erro) {
     if (payload.detalhes && typeof payload.detalhes === "string") {
       return `${payload.erro}: ${payload.detalhes}`;

@@ -1,6 +1,13 @@
 from datetime import date
 from typing import Optional
 
+from fastapi import APIRouter, Depends, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+
+from app.core.security import verificar_token_acesso
+from app.models.user import User
 from app.repositories.flow_repository import (
     FlowNotFoundError,
     FlowQueryError,
@@ -8,10 +15,6 @@ from app.repositories.flow_repository import (
 )
 from app.schemas.flow import FlowQuery, FlowResponse
 from app.services.flow_service import FlowService
-from fastapi import APIRouter, Depends, Query
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 router = APIRouter()
 
@@ -36,6 +39,7 @@ def listar_flows(
     pagina: int = Query(1, ge=1),
     tamanho_pagina: int = Query(100, ge=1, le=1000),
     service: FlowService = Depends(get_flow_service),
+    usuario: User = Depends(verificar_token_acesso),
 ):
     try:
         query = FlowQuery(
