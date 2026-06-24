@@ -7,7 +7,13 @@ from app.api.routes.flows import router as flows_router
 from app.api.routes.system import router as system_router
 from app.core.config import ALLOWED_ORIGINS, API_PREFIX
 
-app = FastAPI(title="PLOG")
+app = FastAPI(
+    title="PLOG",
+    version="0.2.0",
+    docs_url="api/docs",
+    redoc_url="api/redoc",
+    openapi_url="api/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
