@@ -294,6 +294,7 @@ function buildUrl(page = 1) {
   const ip = document.getElementById("ip")?.value.trim() || "";
   const porta = document.getElementById("porta")?.value.trim() || "";
   const day = document.getElementById("day")?.value || "";
+  const dayEnd = document.getElementById("dayEnd")?.value || "";
   const horaDe = document.getElementById("horaDe")?.value.trim() || "";
   const horaAte = document.getElementById("horaAte")?.value.trim() || "";
 
@@ -301,11 +302,16 @@ function buildUrl(page = 1) {
     throw new Error("Selecione uma data para buscar.");
   }
 
+  if (dayEnd && dayEnd < day) {
+    throw new Error("A data final deve ser maior ou igual à data inicial.");
+  }
+
   const params = new URLSearchParams();
   params.set("data", day);
   params.set("pagina", String(page));
   params.set("tamanho_pagina", String(pageSize));
 
+  if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
   if (ip) params.set("ip", ip);
   if (porta) params.set("porta", porta);
   if (horaDe) params.set("hora_de", horaDe);

@@ -1378,6 +1378,11 @@ button:disabled {
   border-color: var(--color-border);
 }
 
+.pagination--bottom {
+  justify-content: center;
+  margin-top: 16px;
+}
+
 #rodape {
   position: fixed;
   bottom: 0;

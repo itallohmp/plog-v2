@@ -43,15 +43,20 @@
       <div class="section_header">
         <div>
           <h2 id="filterTitle">Filtros</h2>
-          <p>Selecione a data. IP, porta e intervalo de horas são opcionais.</p>
+          <p>Selecione a data inicial. Data final, IP, porta e intervalo de horas são opcionais.</p>
         </div>
         <span id="status" class="status_badge" aria-live="polite">Pronto para buscar</span>
       </div>
 
       <form class="filtros" id="filterForm">
         <div class="field">
-          <label for="day">Data</label>
+          <label for="day">Data de</label>
           <input type="date" id="day" required>
+        </div>
+
+        <div class="field">
+          <label for="dayEnd">Data até</label>
+          <input type="date" id="dayEnd">
         </div>
 
         <div class="field">
@@ -93,7 +98,6 @@
           <h2 id="resultsTitle">Resultados</h2>
           <p id="resultSummary">Nenhuma busca executada.</p>
         </div>
-        <div id="pagination" class="pagination"></div>
       </div>
 
       <div class="table_wrap">
@@ -118,6 +122,8 @@
           </tbody>
         </table>
       </div>
+
+      <div id="pagination" class="pagination pagination--bottom"></div>
     </section>
   </main>
 

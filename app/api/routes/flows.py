@@ -30,7 +30,10 @@ def get_flow_service(
 
 @router.get("/flows", response_model=FlowResponse)
 def listar_flows(
-    data: date = Query(..., description="Data dos flows (YYYY-MM-DD)"),
+    data: date = Query(..., description="Data inicial dos flows (YYYY-MM-DD)"),
+    data_fim: Optional[date] = Query(
+        None, description="Data final do intervalo (YYYY-MM-DD, opcional)"
+    ),
     ip: Optional[str] = Query(None, description="IP para filtrar"),
     porta: Optional[int] = Query(None, ge=0, le=65535),
     hora_de: Optional[int] = Query(None, ge=0, le=23),
@@ -43,6 +46,7 @@ def listar_flows(
     try:
         query = FlowQuery(
             data=data,
+            data_fim=data_fim,
             ip=ip,
             porta=porta,
             hora_de=hora_de,
