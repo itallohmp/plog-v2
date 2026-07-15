@@ -18,9 +18,9 @@ Memória do projeto para desenvolvimento spec-driven. Duas seções:
 ## Handoff
 
 **Feature:** regressao-intervalo-datas
-**Fase:** Execute — concluída
-**Branch:** `test/regressao-intervalo-datas` (a ser mergeado em `main`)
-**Concluído:** testes de regressão do intervalo de datas (service + schema) escritos e verdes; Verifier executado.
-**Próximo passo:** merge em `main`.
-**Blockers / dívidas conhecidas:** `tests/test_api.py` tem 7 testes falhando com 401 (o fixture `client` não faz override de `verificar_token_acesso`). Pré-existente, **fora do escopo** desta feature.
+**Fase:** Concluída ✅ (mergeada em `main`, commit de merge `c844f44`)
+**Branch:** removido após merge `--no-ff`.
+**Concluído:** 11 testes de regressão do intervalo (service + schema); Verifier PASS após 1 iteração de fix (5/5 mutações mortas). Relatório em `features/regressao-intervalo-datas/validation.md`.
+**Próximo passo:** nenhum para esta feature. Dívida aberta abaixo é candidata a próxima feature.
+**Blockers / dívidas conhecidas:** `tests/test_api.py` tem 7 testes falhando com 401 (o fixture `client` não faz override de `verificar_token_acesso`). Pré-existente, **fora do escopo** desta feature — candidato a spec própria.
 **Arquivos não commitados alheios:** `app/core/security.py` (apenas reordenação de imports).
