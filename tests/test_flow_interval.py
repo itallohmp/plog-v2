@@ -61,6 +61,29 @@ class TestIntervaloService:
         datas = sorted(r.data[:10] for r in resp.registros)
         assert datas == ["2026-07-14", "2026-07-15"]
 
+    def test_evento_fora_do_filtro_excluido(self):
+        """RINT-01 (clausula 'que casam o filtro'): dentro do dia consultado,
+        eventos com IP diferente ou com data de outro dia sao excluidos.
+
+        Discrimina o filtro intra-dia (pcap_event_matches com data=dia_iso):
+        se o filtro por data ou por IP for removido, o ruido entra e o total sobe.
+        """
+        d14, d15 = date(2026, 7, 14), date(2026, 7, 15)
+        ruido_ip = _evento(d15, ip="10.0.0.99")          # IP fora do filtro
+        ruido_data = _evento(date(2026, 7, 13), ip=IP)   # data de outro dia
+        svc = _service(
+            {d14: [_evento(d14)], d15: [_evento(d15), ruido_ip, ruido_data]}
+        )
+
+        resp = svc.buscar_flows(FlowQuery(data=d14, data_fim=d15, ip=IP))
+
+        assert resp.total == 2
+        assert all(r.origem == IP for r in resp.registros)
+        assert sorted(r.data[:10] for r in resp.registros) == [
+            "2026-07-14",
+            "2026-07-15",
+        ]
+
     def test_dia_vazio_ignorado(self):
         """RINT-02: dia sem dados no intervalo e ignorado; dias com dados retornam.
 
@@ -80,7 +103,9 @@ class TestIntervaloService:
         d14, d15 = date(2026, 7, 14), date(2026, 7, 15)
         svc = _service({})  # ambos os dias levantam
 
-        with pytest.raises(FlowNotFoundError):
+        # A mensagem do fallback de intervalo distingue este caminho do
+        # re-raise legado do dia unico (ver test_dia_unico_vazio_levanta).
+        with pytest.raises(FlowNotFoundError, match="intervalo"):
             svc.buscar_flows(FlowQuery(data=d14, data_fim=d15, ip=IP))
 
     def test_dia_unico_vazio_levanta(self):
@@ -88,7 +113,9 @@ class TestIntervaloService:
         d15 = date(2026, 7, 15)
         svc = _service({})
 
-        with pytest.raises(FlowNotFoundError):
+        # "Legado preservado" = re-raise do erro ORIGINAL do repositorio, e nao
+        # o fallback de intervalo. O match ancora nessa distincao (RINT-04).
+        with pytest.raises(FlowNotFoundError, match="sem dados para"):
             svc.buscar_flows(FlowQuery(data=d15, ip=IP))
 
     def test_label_intervalo(self):
