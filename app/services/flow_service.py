@@ -13,6 +13,7 @@ class FlowService:
 
     def buscar_flows(self, query: FlowQuery) -> FlowResponse:
         porta = str(query.porta) if query.porta is not None else None
+        protocolos = query.protocolos_numericos()
         dias = query.dias()
         horas = query.horas()
 
@@ -34,7 +35,13 @@ class FlowService:
             filtrados.extend(
                 evento
                 for evento in brutos
-                if pcap_event_matches(evento, ip=query.ip, porta=porta, data=dia_iso)
+                if pcap_event_matches(
+                    evento,
+                    ip=query.ip,
+                    porta=porta,
+                    data=dia_iso,
+                    protocolos=protocolos,
+                )
             )
 
         if dias_encontrados == 0:

@@ -17,10 +17,9 @@ Memória do projeto para desenvolvimento spec-driven. Duas seções:
 
 ## Handoff
 
-**Feature:** regressao-intervalo-datas
-**Fase:** Concluída ✅ (mergeada em `main`, commit de merge `c844f44`)
-**Branch:** removido após merge `--no-ff`.
-**Concluído:** 11 testes de regressão do intervalo (service + schema); Verifier PASS após 1 iteração de fix (5/5 mutações mortas). Relatório em `features/regressao-intervalo-datas/validation.md`.
-**Próximo passo:** nenhum para esta feature. Dívida aberta abaixo é candidata a próxima feature.
-**Blockers / dívidas conhecidas:** `tests/test_api.py` tem 7 testes falhando com 401 (o fixture `client` não faz override de `verificar_token_acesso`). Pré-existente, **fora do escopo** desta feature — candidato a spec própria.
-**Arquivos não commitados alheios:** `app/core/security.py` (apenas reordenação de imports).
+**Feature:** filtro-protocolo
+**Fase:** Concluída ✅ (branch `feature/filtro-protocolo`, 8 commits, ainda NÃO mergeada)
+**Concluído:** filtro por TCP/UDP/ICMP com multi-seleção, de ponta a ponta (parser, schema, service, rota, UI). 24 testes do filtro; Verifier PASS após 1 iteração de fix (7/7 mutações mortas).
+**Próximo passo:** merge de `feature/filtro-protocolo` em `main` (aguardando decisão do usuário).
+**Blockers / dívidas conhecidas:** `tests/test_api.py` com 7 falhas 401 (fixture sem override de `verificar_token_acesso`) — contornado localmente em `tests/test_flow_protocolo.py` via `dependency_overrides`; a dívida em si segue aberta.
+**Arquivos não commitados alheios:** `app/core/security.py` (reordenação de imports) e `Roteiro.pdf` (untracked).

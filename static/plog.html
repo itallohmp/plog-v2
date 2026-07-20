@@ -43,7 +43,7 @@
       <div class="section_header">
         <div>
           <h2 id="filterTitle">Filtros</h2>
-          <p>Selecione a data inicial. Data final, IP, porta e intervalo de horas são opcionais.</p>
+          <p>Selecione a data inicial. Data final, IP, porta, protocolo e intervalo de horas são opcionais.</p>
         </div>
         <span id="status" class="status_badge" aria-live="polite">Pronto para buscar</span>
       </div>
@@ -67,6 +67,16 @@
         <div class="field">
           <label for="porta">Porta</label>
           <input type="number" id="porta" min="0" max="65535" placeholder="Ex: 39936">
+        </div>
+
+        <div class="field">
+          <label for="protocolo">Protocolo</label>
+          <select id="protocolo" multiple size="3" aria-describedby="protocoloHint">
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+            <option value="icmp">ICMP</option>
+          </select>
+          <small id="protocoloHint">Nenhum = todos</small>
         </div>
 
         <div class="field">

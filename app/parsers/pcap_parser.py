@@ -1,10 +1,14 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional, Set
 
 PROTOCOLOS = {
     1: "ICMP",
     6: "TCP",
     17: "UDP",
 }
+
+# Mapa reverso usado pelo filtro por protocolo. Derivado de PROTOCOLOS para
+# que exibicao e filtro nunca divirjam.
+PROTOCOLO_NUMEROS = {nome.lower(): numero for numero, nome in PROTOCOLOS.items()}
 
 
 def _as_int(value: Any) -> Optional[int]:
@@ -76,6 +80,7 @@ def pcap_event_matches(
     ip: Optional[str] = None,
     porta: Optional[str] = None,
     data: Optional[str] = None,
+    protocolos: Optional[Set[int]] = None,
 ) -> bool:
     if ip:
         ip_candidates = {
@@ -104,6 +109,12 @@ def pcap_event_matches(
             event, ("t_first", "t_event", "t_received", "t_last")
         )[:10]
         if event_date and event_date != data:
+            return False
+
+    if protocolos:
+        # Evento sem proto (ou com proto nao numerico) da None, que nunca
+        # pertence ao conjunto: falha fechada quando o filtro esta ativo.
+        if _as_int(event.get("proto")) not in protocolos:
             return False
 
     port_number = _as_int(porta)

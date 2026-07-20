@@ -289,12 +289,19 @@ function setDefaultDate() {
   }
 }
 
+function getSelectedProtocols() {
+  const select = document.getElementById("protocolo");
+  if (!select) return [];
+  return Array.from(select.selectedOptions, (option) => option.value);
+}
+
 function buildUrl(page = 1) {
   const pageSize = document.getElementById("pageSize")?.value || "100";
   const ip = document.getElementById("ip")?.value.trim() || "";
   const porta = document.getElementById("porta")?.value.trim() || "";
   const day = document.getElementById("day")?.value || "";
   const dayEnd = document.getElementById("dayEnd")?.value || "";
+  const protocolos = getSelectedProtocols();
   const horaDe = document.getElementById("horaDe")?.value.trim() || "";
   const horaAte = document.getElementById("horaAte")?.value.trim() || "";
 
@@ -312,6 +319,8 @@ function buildUrl(page = 1) {
   params.set("tamanho_pagina", String(pageSize));
 
   if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
+  // Um parametro "protocolo" por protocolo marcado; nenhum marcado = todos.
+  for (const protocolo of protocolos) params.append("protocolo", protocolo);
   if (ip) params.set("ip", ip);
   if (porta) params.set("porta", porta);
   if (horaDe) params.set("hora_de", horaDe);
