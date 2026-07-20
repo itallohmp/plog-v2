@@ -4,11 +4,17 @@ Derivados de .specs/features/filtro-protocolo/spec.md (PROTO-01..09).
 Cada assert codifica o comportamento que a spec exige, nao o que o codigo faz.
 """
 
+from datetime import date
 from typing import Any, Dict
 
+import pytest
+from pydantic import ValidationError
+
 from app.parsers.pcap_parser import PROTOCOLO_NUMEROS, pcap_event_matches
+from app.schemas.flow import FlowQuery
 
 TCP, UDP, ICMP, GRE = 6, 17, 1, 47
+DIA = date(2026, 7, 15)
 
 
 def _evento(proto: Any) -> Dict[str, Any]:
@@ -78,3 +84,44 @@ class TestProtocoloMatcher:
         assert pcap_event_matches(evento, ip="10.0.0.1", protocolos={TCP}) is False
         # IP casa, protocolo nao -> excluido
         assert pcap_event_matches(evento, ip="100.64.18.210", protocolos={UDP}) is False
+
+
+class TestProtocoloSchema:
+    def test_converte_nomes_para_numeros(self):
+        """PROTO-01/02: nomes selecionados viram o conjunto numerico correspondente."""
+        assert FlowQuery(data=DIA, protocolo=["tcp"]).protocolos_numericos() == {TCP}
+        assert FlowQuery(data=DIA, protocolo=["tcp", "udp"]).protocolos_numericos() == {
+            TCP,
+            UDP,
+        }
+        assert FlowQuery(data=DIA, protocolo=["icmp"]).protocolos_numericos() == {ICMP}
+
+    def test_case_insensitive(self):
+        """PROTO-05 (AC7): capitalizacao nao altera o resultado."""
+        assert FlowQuery(data=DIA, protocolo=["TCP"]).protocolos_numericos() == {TCP}
+        assert FlowQuery(data=DIA, protocolo=["Udp"]).protocolos_numericos() == {UDP}
+        assert FlowQuery(data=DIA, protocolo=["iCmP"]).protocolos_numericos() == {ICMP}
+
+    def test_ausente_ou_vazio_sem_filtro(self):
+        """PROTO-03 (AC5): None ou lista vazia desliga o filtro."""
+        assert FlowQuery(data=DIA).protocolos_numericos() is None
+        assert FlowQuery(data=DIA, protocolo=[]).protocolos_numericos() is None
+
+    def test_deduplica_valores_repetidos(self):
+        """Edge: valor repetido equivale a uma unica selecao."""
+        assert FlowQuery(data=DIA, protocolo=["tcp", "tcp"]).protocolos_numericos() == {
+            TCP
+        }
+        assert FlowQuery(data=DIA, protocolo=["tcp", "TCP"]).protocolos_numericos() == {
+            TCP
+        }
+
+    def test_protocolo_invalido_rejeitado(self):
+        """PROTO-06 (AC8): valor fora de TCP/UDP/ICMP e rejeitado na borda."""
+        with pytest.raises(ValidationError):
+            FlowQuery(data=DIA, protocolo=["foo"])
+
+    def test_protocolo_numerico_rejeitado(self):
+        """PROTO-06: a API aceita apenas os nomes, nao o numero do protocolo."""
+        with pytest.raises(ValidationError):
+            FlowQuery(data=DIA, protocolo=["6"])

@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 from ipaddress import ip_address
-from typing import List, Optional
+from typing import List, Optional, Set
 
+from app.parsers.pcap_parser import PROTOCOLO_NUMEROS
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 MAX_DIAS_INTERVALO = 31
@@ -16,6 +17,7 @@ class FlowQuery(BaseModel):
     data_fim: Optional[date] = None
     ip: Optional[str] = None
     porta: Optional[int] = Field(default=None, ge=0, le=65535)
+    protocolo: Optional[List[str]] = None
     hora_de: Optional[int] = Field(default=None, ge=0, le=23)
     hora_ate: Optional[int] = Field(default=None, ge=0, le=23)
     pagina: int = Field(default=1, ge=1)
@@ -31,6 +33,22 @@ class FlowQuery(BaseModel):
         except ValueError as exc:
             raise ValueError("IP invalido") from exc
         return valor
+
+    @field_validator("protocolo")
+    @classmethod
+    def _validar_protocolo(cls, valor: Optional[List[str]]) -> Optional[List[str]]:
+        if not valor:
+            return None
+
+        normalizados: List[str] = []
+        for item in valor:
+            nome = str(item).strip().lower()
+            if nome not in PROTOCOLO_NUMEROS:
+                validos = ", ".join(sorted(PROTOCOLO_NUMEROS))
+                raise ValueError(f"Protocolo invalido: use um de {validos}")
+            if nome not in normalizados:
+                normalizados.append(nome)
+        return normalizados
 
     @model_validator(mode="after")
     def _validar_intervalo_datas(self) -> "FlowQuery":
@@ -48,6 +66,12 @@ class FlowQuery(BaseModel):
         fim = self.data_fim or self.data
         total = (fim - self.data).days + 1
         return [self.data + timedelta(days=i) for i in range(total)]
+
+    def protocolos_numericos(self) -> Optional[Set[int]]:
+        """Numeros IANA dos protocolos selecionados, ou None quando sem filtro."""
+        if not self.protocolo:
+            return None
+        return {PROTOCOLO_NUMEROS[nome] for nome in self.protocolo}
 
     def horas(self) -> List[int]:
         if self.hora_de is None and self.hora_ate is None:
