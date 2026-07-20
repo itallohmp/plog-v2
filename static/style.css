@@ -1227,6 +1227,21 @@ body {
   outline: none;
 }
 
+.field select[multiple] {
+  height: auto;
+  padding: 6px;
+}
+
+.field select[multiple] option {
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.field small {
+  color: var(--color-text-muted, #667085);
+  font-size: 11px;
+}
+
 .primary_button,
 button {
   min-height: 44px;
