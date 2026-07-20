@@ -6,12 +6,15 @@ Cada assert codifica o comportamento que a spec exige, nao o que o codigo faz.
 
 from datetime import date
 from typing import Any, Dict
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import ValidationError
 
 from app.parsers.pcap_parser import PROTOCOLO_NUMEROS, pcap_event_matches
+from app.repositories.flow_repository import FlowRepository
 from app.schemas.flow import FlowQuery
+from app.services.flow_service import FlowService
 
 TCP, UDP, ICMP, GRE = 6, 17, 1, 47
 DIA = date(2026, 7, 15)
@@ -125,3 +128,56 @@ class TestProtocoloSchema:
         """PROTO-06: a API aceita apenas os nomes, nao o numero do protocolo."""
         with pytest.raises(ValidationError):
             FlowQuery(data=DIA, protocolo=["6"])
+
+
+def _service(eventos):
+    """FlowService cujo repositorio devolve sempre os eventos informados."""
+    repo = MagicMock(spec=FlowRepository)
+    repo.fetch_raw_flows.return_value = eventos
+    return FlowService(repo)
+
+
+class TestProtocoloService:
+    """Filtro de ponta a ponta: do FlowQuery ate os registros retornados."""
+
+    EVENTOS = [_evento(TCP), _evento(UDP), _evento(ICMP), _evento(GRE)]
+
+    def test_um_protocolo_filtra_resultado(self):
+        """PROTO-01: buscar com um protocolo retorna somente aquele protocolo."""
+        svc = _service(self.EVENTOS)
+
+        resp = svc.buscar_flows(FlowQuery(data=DIA, protocolo=["tcp"]))
+
+        assert resp.total == 1
+        assert [r.protocolo for r in resp.registros] == ["TCP"]
+
+    def test_multi_protocolo_retorna_uniao(self):
+        """PROTO-02: dois protocolos retornam a uniao e excluem os demais."""
+        svc = _service(self.EVENTOS)
+
+        resp = svc.buscar_flows(FlowQuery(data=DIA, protocolo=["tcp", "udp"]))
+
+        assert resp.total == 2
+        assert sorted(r.protocolo for r in resp.registros) == ["TCP", "UDP"]
+
+    def test_sem_protocolo_retorna_todos(self):
+        """PROTO-03: sem o filtro, todos os protocolos (inclusive GRE) retornam."""
+        svc = _service(self.EVENTOS)
+
+        resp = svc.buscar_flows(FlowQuery(data=DIA))
+
+        assert resp.total == 4
+        assert sorted(r.protocolo for r in resp.registros) == ["47", "ICMP", "TCP", "UDP"]
+
+    def test_compoe_com_ip(self):
+        """PROTO-07: protocolo e IP sao aplicados por conjuncao (AND)."""
+        outro_ip = dict(_evento(TCP), src4_addr="10.0.0.1")
+        svc = _service([_evento(TCP), outro_ip, _evento(UDP)])
+
+        resp = svc.buscar_flows(
+            FlowQuery(data=DIA, ip="100.64.18.210", protocolo=["tcp"])
+        )
+
+        assert resp.total == 1
+        assert resp.registros[0].protocolo == "TCP"
+        assert resp.registros[0].origem == "100.64.18.210"
