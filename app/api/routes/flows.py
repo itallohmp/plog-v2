@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 from app.core.security import verificar_token_acesso
 from app.models.user import User
@@ -36,6 +36,9 @@ def listar_flows(
     ),
     ip: Optional[str] = Query(None, description="IP para filtrar"),
     porta: Optional[int] = Query(None, ge=0, le=65535),
+    protocolo: Optional[List[str]] = Query(
+        None, description="Protocolos: tcp, udp e/ou icmp (repetivel; vazio = todos)"
+    ),
     hora_de: Optional[int] = Query(None, ge=0, le=23),
     hora_ate: Optional[int] = Query(None, ge=0, le=23),
     pagina: int = Query(1, ge=1),
@@ -49,6 +52,7 @@ def listar_flows(
             data_fim=data_fim,
             ip=ip,
             porta=porta,
+            protocolo=protocolo,
             hora_de=hora_de,
             hora_ate=hora_ate,
             pagina=pagina,
