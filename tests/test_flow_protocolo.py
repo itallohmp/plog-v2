@@ -11,10 +11,14 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
+from app.api.routes.flows import get_flow_service
+from app.core.security import verificar_token_acesso
 from app.parsers.pcap_parser import PROTOCOLO_NUMEROS, pcap_event_matches
 from app.repositories.flow_repository import FlowRepository
-from app.schemas.flow import FlowQuery
+from app.schemas.flow import FlowQuery, FlowResponse
 from app.services.flow_service import FlowService
+from fastapi.testclient import TestClient
+from main import app
 
 TCP, UDP, ICMP, GRE = 6, 17, 1, 47
 DIA = date(2026, 7, 15)
@@ -181,3 +185,63 @@ class TestProtocoloService:
         assert resp.total == 1
         assert resp.registros[0].protocolo == "TCP"
         assert resp.registros[0].origem == "100.64.18.210"
+
+
+@pytest.fixture
+def api_client():
+    """Client HTTP com auth e service substituidos, capturando o FlowQuery montado.
+
+    Permite verificar o wiring da rota (o param chega mesmo ao service) sem
+    depender da divida de autenticacao de tests/test_api.py.
+    """
+    capturado: Dict[str, Any] = {}
+
+    class _ServiceEspiao:
+        def buscar_flows(self, query: FlowQuery) -> FlowResponse:
+            capturado["query"] = query
+            return FlowResponse(
+                data="2026-07-15", total=0, pagina=1, total_paginas=1, registros=[]
+            )
+
+    app.dependency_overrides[get_flow_service] = lambda: _ServiceEspiao()
+    app.dependency_overrides[verificar_token_acesso] = lambda: object()
+    with TestClient(app) as client:
+        yield client, capturado
+    app.dependency_overrides.clear()
+
+
+class TestProtocoloRota:
+    """PROTO-06 e wiring: o param da query chega ao FlowQuery e o invalido da 422."""
+
+    def test_rota_repassa_protocolos_selecionados(self, api_client):
+        """Os valores de ?protocolo=... chegam ao FlowQuery usado pelo service."""
+        client, capturado = api_client
+
+        resposta = client.get(
+            "/api/flows", params={"data": "2026-07-15", "protocolo": ["tcp", "udp"]}
+        )
+
+        assert resposta.status_code == 200
+        assert capturado["query"].protocolo == ["tcp", "udp"]
+        assert capturado["query"].protocolos_numericos() == {TCP, UDP}
+
+    def test_rota_sem_protocolo_nao_filtra(self, api_client):
+        """PROTO-03: sem o param, o FlowQuery fica sem filtro de protocolo."""
+        client, capturado = api_client
+
+        resposta = client.get("/api/flows", params={"data": "2026-07-15"})
+
+        assert resposta.status_code == 200
+        assert capturado["query"].protocolo is None
+        assert capturado["query"].protocolos_numericos() is None
+
+    def test_rota_protocolo_invalido_retorna_422(self, api_client):
+        """PROTO-06 (AC8): valor invalido responde 422 com o corpo padrao de erro."""
+        client, _ = api_client
+
+        resposta = client.get(
+            "/api/flows", params={"data": "2026-07-15", "protocolo": "foo"}
+        )
+
+        assert resposta.status_code == 422
+        assert resposta.json()["erro"] == "Parametros invalidos"
