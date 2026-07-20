@@ -94,15 +94,15 @@ para não precisar montar a URL manualmente.
 
 | Requirement ID | Story | Fase | Status |
 | -------------- | ----- | ---- | ------ |
-| PROTO-01 | P1 AC1-AC3 (filtro por um protocolo) | Tasks | Pending |
-| PROTO-02 | P1 AC4 (união multi-protocolo) | Tasks | Pending |
-| PROTO-03 | P1 AC5 (ausente/vazio = sem filtro) | Tasks | Pending |
-| PROTO-04 | P1 AC6 + edges (proto fora do conjunto / ausente / inválido excluído) | Tasks | Pending |
-| PROTO-05 | P1 AC7 (case-insensitive) | Tasks | Pending |
-| PROTO-06 | P1 AC8 (valor inválido → 422) | Tasks | Pending |
-| PROTO-07 | P1 AC9 (AND com demais filtros) | Tasks | Pending |
-| PROTO-08 | P2 AC1 (controle multi-seleção na UI) | Tasks | Pending |
-| PROTO-09 | P2 AC2-AC3 (montagem da URL) | Tasks | Pending |
+| PROTO-01 | P1 AC1-AC3 (filtro por um protocolo) | Execute | Verified |
+| PROTO-02 | P1 AC4 (união multi-protocolo) | Execute | Verified |
+| PROTO-03 | P1 AC5 (ausente/vazio = sem filtro) | Execute | Verified |
+| PROTO-04 | P1 AC6 + edges (proto fora do conjunto / ausente / inválido excluído) | Execute | Verified |
+| PROTO-05 | P1 AC7 (case-insensitive) | Execute | Verified |
+| PROTO-06 | P1 AC8 (valor inválido → 422) | Execute | Verified |
+| PROTO-07 | P1 AC9 (AND com demais filtros) | Execute | Verified |
+| PROTO-08 | P2 AC1 (controle multi-seleção na UI) | Execute | Verified |
+| PROTO-09 | P2 AC2-AC3 (montagem da URL) | Execute | Verified |
 
 **Coverage:** 9 requisitos, todos mapeados para tasks (ver `tasks.md`).
 
