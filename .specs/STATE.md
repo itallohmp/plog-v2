@@ -18,8 +18,8 @@ Memória do projeto para desenvolvimento spec-driven. Duas seções:
 ## Handoff
 
 **Feature:** filtro-protocolo
-**Fase:** Concluída ✅ (branch `feature/filtro-protocolo`, 8 commits, ainda NÃO mergeada)
-**Concluído:** filtro por TCP/UDP/ICMP com multi-seleção, de ponta a ponta (parser, schema, service, rota, UI). 24 testes do filtro; Verifier PASS após 1 iteração de fix (7/7 mutações mortas).
-**Próximo passo:** merge de `feature/filtro-protocolo` em `main` (aguardando decisão do usuário).
-**Blockers / dívidas conhecidas:** `tests/test_api.py` com 7 falhas 401 (fixture sem override de `verificar_token_acesso`) — contornado localmente em `tests/test_flow_protocolo.py` via `dependency_overrides`; a dívida em si segue aberta.
+**Fase:** Concluída e mergeada ✅ (merge `d2c72f1` em `main`, publicado em `origin/main`)
+**Concluído:** filtro TCP/UDP/ICMP com multi-seleção de ponta a ponta (parser, schema, service, rota, UI). 24 testes do filtro, 63 no gate. Verifier PASS (7/7 mutações mortas).
+**Próximo passo:** ⚠️ REINICIAR o processo do backend no servidor. Ver AD-003 — sem restart, o frontend novo envia `protocolo` e a rota antiga em memória ignora o parâmetro, exibindo resultado SEM filtro (mesma classe do bug de `data_fim`).
+**Blockers / dívidas conhecidas:** `tests/test_api.py` com 7 falhas 401 (fixture sem override de `verificar_token_acesso`). Dívida aberta — contornada localmente em `tests/test_flow_protocolo.py`.
 **Arquivos não commitados alheios:** `app/core/security.py` (reordenação de imports) e `Roteiro.pdf` (untracked).
