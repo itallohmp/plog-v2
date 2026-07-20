@@ -290,9 +290,10 @@ function setDefaultDate() {
 }
 
 function getSelectedProtocols() {
-  const select = document.getElementById("protocolo");
-  if (!select) return [];
-  return Array.from(select.selectedOptions, (option) => option.value);
+  return Array.from(
+    document.querySelectorAll('input[name="protocolo"]:checked'),
+    (checkbox) => checkbox.value
+  );
 }
 
 function buildUrl(page = 1) {

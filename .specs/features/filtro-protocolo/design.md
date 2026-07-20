@@ -38,7 +38,7 @@ parsers/pcap_parser.py     pcap_event_matches(..., protocolos: Optional[Set[int]
 | D4 | A validação de nomes fica no schema (`FlowQuery`), não no matcher | Erro de entrada deve virar 422 na borda, como já ocorre com `ip` inválido; o matcher só executa a regra |
 | D5 | `None` e lista vazia são equivalentes (sem filtro) | Consistente com `_validar_ip`, que já mapeia `""` → `None` (PROTO-03) |
 | D6 | Evento sem `proto` ou com `proto` não numérico é **excluído** quando o filtro está ativo | `_as_int` devolve `None`, que nunca pertence ao conjunto; falha fechada evita falso positivo (PROTO-04) |
-| D7 | UI usa `<select multiple>` com as três opções | Multi-seleção sem dependência nova; reaproveita o padrão de `<select>` do campo "Linhas" |
+| D7 | ~~UI usa `<select multiple>`~~ → **revisado: grupo de 3 checkboxes** | O `select multiple` (72px de altura) quebrava a linha de base de 44px da barra de filtros e escondia os estados atrás de rolagem. Checkboxes mostram as três opções e o que está marcado de uma vez, cabem na faixa de 44px, e dispensam o texto de ajuda "Nenhum = todos". Revisão feita na avaliação de layout (ver `.specs/features/filtro-protocolo/layout.md`) |
 
 ## Componentes tocados
 
