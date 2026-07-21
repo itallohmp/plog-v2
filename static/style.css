@@ -2507,6 +2507,14 @@ main {
   background: #101012;
 }
 
+/* Rodapé do login acompanha a cor do menubar no escuro (sólido, sem glass). */
+:root[data-theme="dark"] .footer_login {
+  background: #101012;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-top-color: var(--color-border);
+}
+
 :root[data-theme="dark"] .auth_card {
   background: var(--color-surface);
   border-color: var(--color-border);
