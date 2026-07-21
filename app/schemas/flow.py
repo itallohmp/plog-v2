@@ -257,5 +257,45 @@ class AnomaliaResponse(BaseModel):
     itens: List[AnomaliaIP]
 
 
+class SeriePonto(BaseModel):
+    """Um ponto da curva de concorrencia: blocos ativos ao mesmo tempo em `t`.
+
+    Cada ponto e um instante em que a contagem mudou (abertura ou fechamento de
+    bloco). Entre dois pontos o valor e constante — a serie e uma funcao degrau.
+    `total` e a soma dos tres protocolos no instante.
+    """
+
+    t: str  # ISO do instante da mudanca
+    total: int = 0
+    tcp: int = 0
+    udp: int = 0
+    icmp: int = 0
+
+
+class SeriePico(BaseModel):
+    """Maximo da serie e o instante em que ocorreu (para marcar no grafico)."""
+
+    total: int = 0
+    instante: Optional[str] = None
+
+
+class SerieResponse(BaseModel):
+    """Serie temporal da alocacao de blocos de um IP local, para o modal de picos.
+
+    `pontos` e a curva de concorrencia (funcao degrau) na janela consultada; seu
+    maximo (`pico.total`) coincide com o `total_pico` do ranking. `truncada`
+    sinaliza que a serie foi reamostrada por ter pontos demais (picos preservados).
+    """
+
+    ip: str
+    data: str
+    inicio: Optional[str] = None
+    fim: Optional[str] = None
+    limiar: int
+    pico: SeriePico = Field(default_factory=SeriePico)
+    pontos: List[SeriePonto] = Field(default_factory=list)
+    truncada: bool = False
+
+
 # FlowResponse referencia AnomaliaResponse (definido depois): resolve o forward.
 FlowResponse.model_rebuild()

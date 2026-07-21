@@ -161,3 +161,80 @@ class TestDetectarAnomalias:
         )
         assert [i.origem for i in resp.itens] == ["100.64.0.3", "100.64.0.2"]
         assert resp.limiar == 2
+
+
+class TestSerieIp:
+    def test_serie_sobe_e_desce_com_os_blocos(self):
+        # Dois blocos se sobrepoem entre 10:01 e 10:02: pico 2, depois desce a 0.
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.0.5", pblock=200),
+            _ev("10:01:00", "create", origem="100.64.0.5", pblock=300),
+            _ev("10:02:00", "delete", origem="100.64.0.5", pblock=300),
+            _ev("10:03:00", "delete", origem="100.64.0.5", pblock=200),
+        ]
+        resp = _service(eventos).serie_ip(
+            FlowQuery(data=date(2026, 7, 15), ip="100.64.0.5"), "100.64.0.5"
+        )
+        assert resp.ip == "100.64.0.5"
+        totais = [p.total for p in resp.pontos]
+        assert totais == [1, 2, 1, 0]
+        assert resp.pico.total == 2
+        assert resp.pico.instante == resp.pontos[1].t
+
+    def test_pico_da_serie_bate_com_o_ranking(self):
+        # A serie e o ranking devem concordar no maximo de concorrencia (2).
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.0.5", pblock=200),
+            _ev("10:02:00", "delete", origem="100.64.0.5", pblock=200),
+            _ev("10:01:00", "create", origem="100.64.0.5", pblock=300),
+            _ev("10:03:00", "delete", origem="100.64.0.5", pblock=300),
+            _ev("10:10:00", "create", origem="100.64.0.5", pblock=400),
+            _ev("10:11:00", "delete", origem="100.64.0.5", pblock=400),
+        ]
+        svc = _service(eventos)
+        serie = svc.serie_ip(
+            FlowQuery(data=date(2026, 7, 15), ip="100.64.0.5"), "100.64.0.5"
+        )
+        ranking = svc.detectar_anomalias(
+            FlowQuery(data=date(2026, 7, 15)), limiar=2
+        )
+        assert serie.pico.total == ranking.itens[0].total_pico == 2
+
+    def test_serie_so_conta_blocos_da_origem(self):
+        # O IP aparece como NAT de outro assinante; a serie so conta a origem.
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.0.7", pblock=10,
+                nat="177.137.21.7"),
+            _ev("10:05:00", "create", origem="100.64.0.9", pblock=20,
+                nat="177.137.21.7"),
+        ]
+        resp = _service(eventos).serie_ip(
+            FlowQuery(data=date(2026, 7, 15), ip="100.64.0.7"), "100.64.0.7"
+        )
+        # So o bloco cuja origem e 100.64.0.7 entra: total nunca passa de 1.
+        assert [p.total for p in resp.pontos] == [1]
+        assert resp.pico.total == 1
+
+    def test_serie_vazia_quando_sem_blocos(self):
+        eventos = [
+            _ev("09:00:00", "create", origem="100.64.0.1", pblock=100),
+            _ev("09:05:00", "delete", origem="100.64.0.1", pblock=100),
+        ]
+        resp = _service(eventos).serie_ip(
+            FlowQuery(data=date(2026, 7, 15), ip="100.64.0.2"), "100.64.0.2"
+        )
+        assert resp.pontos == []
+        assert resp.pico.total == 0
+        assert resp.inicio is None and resp.fim is None
+
+    def test_serie_separa_por_protocolo(self):
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.0.8", pblock=10, proto="tcp"),
+            _ev("10:01:00", "create", origem="100.64.0.8", pblock=20, proto="udp"),
+        ]
+        resp = _service(eventos).serie_ip(
+            FlowQuery(data=date(2026, 7, 15), ip="100.64.0.8"), "100.64.0.8"
+        )
+        ultimo = resp.pontos[-1]
+        assert ultimo.total == 2
+        assert ultimo.tcp == 1 and ultimo.udp == 1 and ultimo.icmp == 0

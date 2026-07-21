@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+from itertools import groupby
 from math import ceil
 from typing import Any, Dict, List
 
@@ -27,12 +28,19 @@ from app.schemas.flow import (
     FlowResponse,
     FlowResumo,
     FlowSession,
+    SeriePico,
+    SeriePonto,
+    SerieResponse,
 )
 
 _PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
 
 # Quantos IPs anomalos acompanham a resposta da consulta (secao do dashboard).
 _ANOMALIA_DASHBOARD_TOP = 10
+
+# Teto de pontos na serie do modal de picos; acima disso reamostra preservando
+# os maximos (mantem os picos visiveis sem SVG gigante).
+_SERIE_MAX_PONTOS = 2000
 
 
 def _protocolo_display(sessao: Sessao) -> str:
@@ -316,6 +324,128 @@ class FlowService:
             limiar=limiar_efetivo,
             total_ips=len(itens),
             itens=itens[:limite_n],
+        )
+
+    @staticmethod
+    def _reamostrar_serie(
+        pontos: List[SeriePonto], alvo: int
+    ) -> List[SeriePonto]:
+        """Reduz a serie para ~alvo pontos preservando os picos.
+
+        Divide em baldes contiguos e mantem, de cada balde, o ponto de maior
+        total (o pico local). O primeiro e o ultimo ponto sao sempre mantidos
+        para o dominio do eixo nao encolher. A serie ja e monotonica em `t`.
+        """
+        n = len(pontos)
+        if n <= alvo:
+            return pontos
+        tamanho = ceil(n / alvo)
+        resultado = [
+            max(pontos[i : i + tamanho], key=lambda p: p.total)
+            for i in range(0, n, tamanho)
+        ]
+        if resultado[0].t != pontos[0].t:
+            resultado.insert(0, pontos[0])
+        if resultado[-1].t != pontos[-1].t:
+            resultado.append(pontos[-1])
+        return resultado
+
+    @classmethod
+    def _serie_concorrencia(
+        cls, sessoes: List[Sessao], ip: str
+    ) -> Dict[str, Any]:
+        """Curva de concorrencia de blocos do IP `ip` ao longo da janela.
+
+        Constroi a funcao degrau (+1 na abertura, -1 no fechamento de cada
+        bloco) e emite um ponto por instante em que a contagem muda, com o total
+        e a quebra por protocolo. O maximo da curva coincide, por construcao, com
+        o `total_pico` do ranking.
+
+        So conta sessoes cujo `origem` e o proprio IP: o filtro da consulta casa
+        o IP tambem em NAT/destino/roteador, entao aqui refinamos para os blocos
+        alocados a partir dele (mesma regra do ranking, que agrupa por origem).
+        """
+        eventos: List = []  # (instante, delta, proto) por borda de bloco
+        for sessao in sessoes:
+            if sessao.status == "indefinida" or sessao.abertura is None:
+                continue
+            base = normalize_pcap_event(sessao.ancora)
+            if base.get("origem") != ip:
+                continue
+            proto = _protocolo_display(sessao)
+            eventos.append((sessao.abertura, 1, proto))
+            # Bloco aberto (sem fechamento na janela) so tem a borda de subida:
+            # a curva permanece elevada ate a direita do grafico.
+            if sessao.fechamento is not None:
+                eventos.append((sessao.fechamento, -1, proto))
+
+        if not eventos:
+            return {
+                "pontos": [],
+                "inicio": None,
+                "fim": None,
+                "pico": (0, None),
+                "truncada": False,
+            }
+
+        # -1 antes de +1 no mesmo instante: um bloco que abre exatamente quando
+        # outro fecha nao conta como sobreposto (mesma convencao do pico).
+        eventos.sort(key=lambda e: (e[0], e[1]))
+
+        contagem = {"TCP": 0, "UDP": 0, "ICMP": 0}
+        total = 0
+        pico_total = 0
+        pico_instante = None
+        pontos: List[SeriePonto] = []
+
+        for instante, grupo in groupby(eventos, key=lambda e: e[0]):
+            for _, delta, proto in grupo:
+                total += delta
+                if proto in contagem:
+                    contagem[proto] += delta
+            iso = instante.isoformat()
+            pontos.append(
+                SeriePonto(
+                    t=iso,
+                    total=total,
+                    tcp=contagem["TCP"],
+                    udp=contagem["UDP"],
+                    icmp=contagem["ICMP"],
+                )
+            )
+            if total > pico_total:
+                pico_total = total
+                pico_instante = iso
+
+        truncada = len(pontos) > _SERIE_MAX_PONTOS
+        if truncada:
+            pontos = cls._reamostrar_serie(pontos, _SERIE_MAX_PONTOS)
+
+        return {
+            "pontos": pontos,
+            "inicio": pontos[0].t,
+            "fim": pontos[-1].t,
+            "pico": (pico_total, pico_instante),
+            "truncada": truncada,
+        }
+
+    def serie_ip(self, query: FlowQuery, ip: str) -> SerieResponse:
+        """Serie temporal de blocos alocados por um IP local (modal do ranking).
+
+        Reusa a mesma coleta filtrada da consulta (o `ip` ja restringe o fetch),
+        depois monta a curva de concorrencia so com os blocos de `origem == ip`.
+        """
+        dados = self._serie_concorrencia(self._coletar_sessoes(query), ip)
+        pico_total, pico_instante = dados["pico"]
+        return SerieResponse(
+            ip=ip,
+            data=self._data_label(query),
+            inicio=dados["inicio"],
+            fim=dados["fim"],
+            limiar=config.ANOMALIA_LIMIAR,
+            pico=SeriePico(total=pico_total, instante=pico_instante),
+            pontos=dados["pontos"],
+            truncada=dados["truncada"],
         )
 
     def _anomalias_dashboard(

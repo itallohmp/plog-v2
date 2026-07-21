@@ -8,7 +8,12 @@ from app.repositories.flow_repository import (
     FlowQueryError,
     FlowRepository,
 )
-from app.schemas.flow import AnomaliaResponse, FlowQuery, FlowResponse
+from app.schemas.flow import (
+    AnomaliaResponse,
+    FlowQuery,
+    FlowResponse,
+    SerieResponse,
+)
 from app.services.flow_service import FlowService
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
@@ -117,6 +122,50 @@ def listar_anomalias(
 
     try:
         return service.detectar_anomalias(query, limiar=limiar)
+    except FlowNotFoundError as exc:
+        return JSONResponse({"erro": str(exc)}, status_code=404)
+    except FlowQueryError as exc:
+        return JSONResponse(
+            {"erro": "Falha ao consultar flows", "detalhes": str(exc)},
+            status_code=502,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"erro": str(exc)}, status_code=500)
+
+
+@router.get("/flows/anomalias/serie", response_model=SerieResponse)
+def serie_anomalia(
+    ip: str = Query(..., description="IP local para a serie de picos"),
+    data: date = Query(..., description="Data inicial (YYYY-MM-DD)"),
+    data_fim: Optional[date] = Query(None, description="Data final (opcional)"),
+    hora_de: Optional[int] = Query(None, ge=0, le=23),
+    hora_ate: Optional[int] = Query(None, ge=0, le=23),
+    service: FlowService = Depends(get_flow_service),
+    usuario: User = Depends(verificar_token_acesso),
+):
+    """Curva de alocacao de blocos de um IP na janela (modal do ranking).
+
+    Mesmo filtro do ranking (sem protocolo/estado): conta todos os blocos do IP.
+    """
+    try:
+        query = FlowQuery(
+            data=data,
+            data_fim=data_fim,
+            ip=ip,
+            hora_de=hora_de,
+            hora_ate=hora_ate,
+        )
+    except ValidationError as exc:
+        return JSONResponse(
+            {
+                "erro": "Parametros invalidos",
+                "detalhes": jsonable_encoder(exc.errors()),
+            },
+            status_code=422,
+        )
+
+    try:
+        return service.serie_ip(query, ip)
     except FlowNotFoundError as exc:
         return JSONResponse({"erro": str(exc)}, status_code=404)
     except FlowQueryError as exc:

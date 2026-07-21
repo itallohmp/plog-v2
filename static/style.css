@@ -2590,15 +2590,23 @@ tr:hover .ip_serie_btn {
 
 /* ── Modal de picos (elemento <dialog> nativo) ── */
 .serie_modal {
+  /* Centraliza no meio do viewport (vertical + horizontal), independente da
+     altura do conteúdo e de qualquer regra global sobre <dialog>. */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
   width: min(920px, 94vw);
   max-width: 94vw;
+  max-height: 90vh;
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .serie_modal::backdrop {

@@ -81,6 +81,7 @@ function initPlogPage() {
   loadAdminNav();
   setDefaultDate();
   renderPagination(1, 1);
+  initSerieModal();
 
   const filterForm = document.getElementById("filterForm");
   filterForm.addEventListener("submit", (event) => {
@@ -919,7 +920,14 @@ function renderAnomalias(itens, limiar) {
     .map(
       (a) => `
     <tr>
-      <td class="mono">${escapeHtml(a.origem)}</td>
+      <td class="mono ip_cell">
+        <span class="ip_cell__addr">${escapeHtml(a.origem)}</span>
+        <button type="button" class="ip_serie_btn" data-ip="${escapeHtml(a.origem)}"
+          title="Ver picos de alocação de portas de ${escapeHtml(a.origem)}"
+          aria-label="Ver picos de alocação de portas de ${escapeHtml(a.origem)}">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 4 3-5 6 8"/></svg>
+        </button>
+      </td>
       <td>${protoCell(a.tcp)}</td>
       <td>${protoCell(a.udp)}</td>
       <td>${protoCell(a.icmp)}</td>
@@ -930,4 +938,301 @@ function renderAnomalias(itens, limiar) {
     </tr>`
     )
     .join("");
+}
+
+// ── Modal de picos: curva temporal de blocos de porta de um IP ──
+//
+// Abre um <dialog> nativo com um gráfico SVG (área em degrau) montado à mão, sem
+// dependência externa — coerente com o donut do panorama. Eixo X = tempo dentro
+// da janela consultada; eixo Y = blocos alocados simultaneamente. O máximo da
+// curva coincide, por construção, com o "Pico total" do ranking (mesma varredura
+// no backend). Os dados vêm de /flows/anomalias/serie sob demanda, no clique.
+
+// Sistema de coordenadas interno do SVG (escala via viewBox p/ 100% de largura).
+const SERIE_W = 820;
+const SERIE_H = 340;
+const SERIE_M = { top: 22, right: 20, bottom: 46, left: 48 };
+
+let serieAbortController = null;
+
+function initSerieModal() {
+  const dialog = document.getElementById("serieModal");
+  if (!dialog) return;
+
+  const fechar = () => {
+    if (dialog.open) dialog.close();
+  };
+
+  document.getElementById("serieModalClose")?.addEventListener("click", fechar);
+
+  // Clique no backdrop (fora da caixa) fecha: o <dialog> ocupa a tela inteira,
+  // então um clique cujo alvo é o próprio dialog caiu fora do conteúdo.
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) fechar();
+  });
+
+  // Fechar (Esc, botão ou backdrop) cancela qualquer busca de série pendente.
+  dialog.addEventListener("close", () => {
+    if (serieAbortController) {
+      serieAbortController.abort();
+      serieAbortController = null;
+    }
+  });
+
+  // Delegação no corpo da tabela: sobrevive à re-renderização do ranking.
+  document.getElementById("tabelaAnomalias")?.addEventListener("click", (event) => {
+    const btn = event.target.closest(".ip_serie_btn");
+    if (btn) abrirSerieModal(btn.dataset.ip);
+  });
+}
+
+// URL da série: reaproveita os filtros de data/hora atuais do formulário.
+function buildSerieUrl(ip) {
+  const day = document.getElementById("day")?.value || "";
+  const dayEnd = document.getElementById("dayEnd")?.value || "";
+  const horaDe = document.getElementById("horaDe")?.value.trim() || "";
+  const horaAte = document.getElementById("horaAte")?.value.trim() || "";
+
+  const params = new URLSearchParams();
+  params.set("ip", ip);
+  params.set("data", day);
+  if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
+  if (horaDe) params.set("hora_de", horaDe);
+  if (horaAte) params.set("hora_ate", horaAte);
+  return `${API_PREFIX}/flows/anomalias/serie?${params.toString()}`;
+}
+
+async function abrirSerieModal(ip) {
+  if (!ip || !requireAuth()) return;
+
+  const dialog = document.getElementById("serieModal");
+  const body = document.getElementById("serieModalBody");
+  const sub = document.getElementById("serieModalSub");
+  const title = document.getElementById("serieModalTitle");
+  if (!dialog || !body) return;
+
+  if (title) title.textContent = `Picos de alocação — ${ip}`;
+  if (sub) sub.textContent = "Carregando…";
+  body.innerHTML = '<div class="serie_state">Carregando série…</div>';
+  if (!dialog.open) dialog.showModal();
+
+  if (serieAbortController) serieAbortController.abort();
+  serieAbortController = new AbortController();
+  const controller = serieAbortController;
+
+  try {
+    const resp = await fetchWithAuth(buildSerieUrl(ip), { signal: controller.signal });
+    const payload = await parseJsonResponse(resp);
+    if (!resp.ok) {
+      const msg = formatError(payload, resp.status);
+      if (sub) sub.textContent = "Não foi possível carregar.";
+      body.innerHTML =
+        `<div class="serie_state serie_state--erro">${escapeHtml(msg)}</div>`;
+      return;
+    }
+    renderSerieChart(payload, sub, body);
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    console.error("Erro na série:", err);
+    if (sub) sub.textContent = "Erro de conexão.";
+    body.innerHTML =
+      '<div class="serie_state serie_state--erro">Erro ao carregar a série.</div>';
+  } finally {
+    if (serieAbortController === controller) serieAbortController = null;
+  }
+}
+
+// Passos "bonitos" inteiros para o eixo Y (blocos são inteiros).
+function serieTicksY(maxV, alvo = 5) {
+  const bruto = Math.max(1, maxV) / alvo;
+  const mag = Math.pow(10, Math.floor(Math.log10(bruto || 1)));
+  const candidatos = [1, 2, 2.5, 5, 10].map((m) => m * mag);
+  let passo = candidatos.find((c) => c >= bruto) || candidatos[candidatos.length - 1];
+  passo = Math.max(1, Math.round(passo));
+  const topo = Math.max(passo, Math.ceil(maxV / passo) * passo);
+  const ticks = [];
+  for (let v = 0; v <= topo + 1e-9; v += passo) ticks.push(v);
+  return { topo, ticks };
+}
+
+// Rótulo do eixo X: dias (DD/MM) em janelas longas, senão hora (HH:MM).
+function serieFmtEixoX(ms, spanMs) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  if (spanMs > 36 * 3600 * 1000) return `${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function renderSerieChart(dados, subEl, bodyEl) {
+  const pontos = Array.isArray(dados.pontos) ? dados.pontos : [];
+  const pico = dados.pico || { total: 0, instante: null };
+  const limiar = dados.limiar || 0;
+
+  if (!pontos.length) {
+    if (subEl) subEl.textContent = `${dados.data} · sem blocos nesta janela`;
+    bodyEl.innerHTML =
+      '<div class="serie_state">Nenhum bloco de porta alocado por este IP na janela consultada.</div>';
+    return;
+  }
+
+  const picoHora = pico.instante ? ` às ${formatTimestamp(pico.instante).slice(11)}` : "";
+  const trunc = dados.truncada ? " · série reamostrada (picos preservados)" : "";
+  if (subEl) {
+    subEl.textContent =
+      `${dados.data} · pico de ${pico.total} bloco(s)${picoHora} · limiar de anomalia ${limiar}${trunc}`;
+  }
+
+  // Geometria compartilhada entre o desenho e o hover.
+  const W = SERIE_W;
+  const H = SERIE_H;
+  const M = SERIE_M;
+  const t0 = Date.parse(pontos[0].t);
+  const t1 = Date.parse(pontos[pontos.length - 1].t);
+  const spanMs = Math.max(1, t1 - t0);
+  const unico = t1 <= t0;
+
+  const larguraPlot = W - M.left - M.right;
+  const alturaPlot = H - M.top - M.bottom;
+  const { topo, ticks } = serieTicksY(Math.max(pico.total, limiar, 1));
+
+  const x = (ms) => (unico ? M.left + larguraPlot / 2 : M.left + ((ms - t0) / spanMs) * larguraPlot);
+  const y = (v) => H - M.bottom - (v / topo) * alturaPlot;
+  const px = (p) => x(Date.parse(p.t));
+
+  // Vértices da função degrau (step-after): o valor de um ponto vale até o próximo.
+  const verts = [[px(pontos[0]), y(pontos[0].total)]];
+  for (let i = 1; i < pontos.length; i++) {
+    verts.push([px(pontos[i]), y(pontos[i - 1].total)]); // horizontal no valor anterior
+    verts.push([px(pontos[i]), y(pontos[i].total)]); // degrau vertical ao novo valor
+  }
+  const fmt = ([a, b]) => `${a.toFixed(1)} ${b.toFixed(1)}`;
+  const baseY = y(0);
+  const x0 = verts[0][0];
+  const xLast = verts[verts.length - 1][0];
+
+  const linePath = "M" + verts.map(fmt).join(" L");
+  const areaPath =
+    `M${x0.toFixed(1)} ${baseY.toFixed(1)} L` +
+    verts.map(fmt).join(" L") +
+    ` L${xLast.toFixed(1)} ${baseY.toFixed(1)} Z`;
+
+  // Grade + rótulos do eixo Y.
+  let grid = "";
+  for (const v of ticks) {
+    const yy = y(v).toFixed(1);
+    grid += `<line class="serie_chart__grid" x1="${M.left}" y1="${yy}" x2="${W - M.right}" y2="${yy}"/>`;
+    grid += `<text class="serie_chart__ylabel" x="${M.left - 8}" y="${yy}" dy="0.32em">${v}</text>`;
+  }
+
+  // Eixo X: ~6 marcas (ou uma só, se a janela tiver um instante único).
+  let eixoX = "";
+  const nX = unico ? 0 : 6;
+  for (let i = 0; i <= nX; i++) {
+    const ms = t0 + spanMs * (nX === 0 ? 0.5 : i / nX);
+    const xx = (unico ? M.left + larguraPlot / 2 : x(ms)).toFixed(1);
+    eixoX += `<line class="serie_chart__tick" x1="${xx}" y1="${H - M.bottom}" x2="${xx}" y2="${H - M.bottom + 5}"/>`;
+    eixoX += `<text class="serie_chart__xlabel" x="${xx}" y="${H - M.bottom + 20}">${serieFmtEixoX(ms, spanMs)}</text>`;
+  }
+
+  // Linha do limiar de anomalia (referência de investigação).
+  let limiarLine = "";
+  if (limiar > 0 && limiar <= topo) {
+    const ly = y(limiar);
+    limiarLine =
+      `<line class="serie_chart__limiar" x1="${M.left}" y1="${ly.toFixed(1)}" x2="${W - M.right}" y2="${ly.toFixed(1)}"/>` +
+      `<text class="serie_chart__limiarlbl" x="${W - M.right}" y="${(ly - 5).toFixed(1)}">limiar ${limiar}</text>`;
+  }
+
+  // Marcador do pico.
+  let picoMark = "";
+  if (pico.instante != null) {
+    picoMark = `<circle class="serie_chart__pico" cx="${x(Date.parse(pico.instante)).toFixed(1)}" cy="${y(pico.total).toFixed(1)}" r="4"/>`;
+  }
+
+  bodyEl.innerHTML = `
+    <div class="serie_chart_wrap">
+      <svg class="serie_chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"
+           role="img" aria-label="Curva de blocos de porta alocados ao longo do tempo. Pico de ${pico.total} bloco(s).">
+        <defs>
+          <linearGradient id="serieGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" class="serie_chart__grad0"/>
+            <stop offset="100%" class="serie_chart__grad1"/>
+          </linearGradient>
+        </defs>
+        ${grid}
+        ${limiarLine}
+        <path class="serie_chart__area" d="${areaPath}"/>
+        <path class="serie_chart__line" d="${linePath}"/>
+        ${picoMark}
+        <line class="serie_chart__axis" x1="${M.left}" y1="${H - M.bottom}" x2="${W - M.right}" y2="${H - M.bottom}"/>
+        <line class="serie_chart__axis" x1="${M.left}" y1="${M.top}" x2="${M.left}" y2="${H - M.bottom}"/>
+        ${eixoX}
+        <line class="serie_chart__cross" id="serieCross" x1="0" y1="${M.top}" x2="0" y2="${H - M.bottom}" style="display:none"/>
+        <circle class="serie_chart__focus" id="serieFocus" r="4" style="display:none"/>
+        <rect class="serie_chart__overlay" id="serieOverlay" x="${M.left}" y="${M.top}" width="${larguraPlot}" height="${alturaPlot}"/>
+      </svg>
+      <div class="serie_tooltip" id="serieTooltip" hidden></div>
+      <p class="serie_axis_note">Eixo Y: blocos simultâneos · Eixo X: ${unico ? "instante" : "tempo na janela"}</p>
+    </div>`;
+
+  wireSerieHover(bodyEl, pontos, { t0, spanMs, unico, x, y });
+}
+
+// Hover: crosshair + ponto em foco + tooltip com o valor do ponto mais próximo.
+function wireSerieHover(bodyEl, pontos, geo) {
+  const overlay = bodyEl.querySelector("#serieOverlay");
+  const cross = bodyEl.querySelector("#serieCross");
+  const focus = bodyEl.querySelector("#serieFocus");
+  const tooltip = bodyEl.querySelector("#serieTooltip");
+  const wrap = bodyEl.querySelector(".serie_chart_wrap");
+  if (!overlay || !cross || !focus || !tooltip || !wrap) return;
+
+  const mostrar = (visivel) => {
+    cross.style.display = visivel ? "" : "none";
+    focus.style.display = visivel ? "" : "none";
+    tooltip.hidden = !visivel;
+  };
+
+  const aoMover = (event) => {
+    const oRect = overlay.getBoundingClientRect();
+    if (oRect.width <= 0) return;
+    const frac = Math.min(1, Math.max(0, (event.clientX - oRect.left) / oRect.width));
+    const alvoMs = geo.unico ? geo.t0 : geo.t0 + frac * geo.spanMs;
+
+    // Ponto mais próximo no tempo (série é curta; varredura linear basta).
+    let melhor = pontos[0];
+    let menor = Infinity;
+    for (const p of pontos) {
+      const d = Math.abs(Date.parse(p.t) - alvoMs);
+      if (d < menor) {
+        menor = d;
+        melhor = p;
+      }
+    }
+
+    const vx = geo.x(Date.parse(melhor.t));
+    cross.setAttribute("x1", vx);
+    cross.setAttribute("x2", vx);
+    focus.setAttribute("cx", vx);
+    focus.setAttribute("cy", geo.y(melhor.total));
+    mostrar(true);
+
+    const wRect = wrap.getBoundingClientRect();
+    const pxPonto = geo.unico
+      ? oRect.left - wRect.left + oRect.width / 2
+      : oRect.left - wRect.left + ((Date.parse(melhor.t) - geo.t0) / geo.spanMs) * oRect.width;
+    tooltip.innerHTML =
+      `<b>${escapeHtml(formatTimestamp(melhor.t))}</b>` +
+      `<span class="serie_tooltip__tot">${melhor.total} bloco(s)</span>` +
+      `<span class="serie_tooltip__proto">TCP ${melhor.tcp} · UDP ${melhor.udp} · ICMP ${melhor.icmp}</span>`;
+    // Posiciona a tooltip acima do plot, sem sair da caixa.
+    const largura = tooltip.offsetWidth || 150;
+    let left = pxPonto - largura / 2;
+    left = Math.min(Math.max(4, left), wRect.width - largura - 4);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = "6px";
+  };
+
+  overlay.addEventListener("mousemove", aoMover);
+  overlay.addEventListener("mouseleave", () => mostrar(false));
 }
