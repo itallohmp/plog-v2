@@ -63,6 +63,20 @@ class TestSessaoService:
         assert resp.registros[0].status == "aberta"
         assert resp.registros[0].fechamento is None
 
+    def test_protocolo_vem_do_evento_com_proto_valido(self):
+        """Edge (spec): create com proto 0/ausente e delete com proto valido ->
+        o protocolo exibido vem do delete."""
+        create = dict(BLOCO, t_first="2026-07-15T10:00:00",
+                      nat_event="NAT translation create", proto=0)
+        delete = dict(BLOCO, t_first="2026-07-15T10:00:10",
+                      nat_event="NAT translation delete", proto=6)
+        svc = _service([create, delete])
+
+        resp = svc.buscar_flows(FlowQuery(data=DIA))
+
+        assert resp.registros[0].status == "fechada"
+        assert resp.registros[0].protocolo == "TCP"
+
     def test_paginacao_conta_sessoes(self):
         """total e paginacao passam a contar sessoes, nao eventos crus."""
         eventos = [
