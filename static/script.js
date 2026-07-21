@@ -596,6 +596,7 @@ async function buscarLogs(page = 1) {
   }
 
   clearTable();
+  resetPanorama();
 
   const summaryEl = document.getElementById("resultSummary");
   const btn = document.getElementById("btnBuscar");
@@ -654,11 +655,13 @@ async function buscarLogs(page = 1) {
       renderEmptyRow("Nenhum flow encontrado para os filtros informados.");
       setStatus("Nenhum resultado", "empty");
       if (summaryEl) summaryEl.textContent = "Tente outra data, IP, porta ou hora.";
+      resetPanorama();
     } else {
       setStatus(`${registros.length} flows nesta página`, "success");
       if (summaryEl) {
         summaryEl.textContent = `Mostrando ${registros.length} de ${total} resultado(s) — página ${page} de ${totalPaginas}.`;
       }
+      atualizarPanorama(registros, total);
     }
   } catch (err) {
     if (err.name === "AbortError") {
@@ -695,6 +698,88 @@ function renderEmptyRow(message) {
       <td colspan="9">${escapeHtml(message)}</td>
     </tr>
   `;
+}
+
+function formatarSegundos(seg) {
+  if (seg === null || seg === undefined || Number.isNaN(seg)) return "—";
+  seg = Math.round(seg);
+  if (seg < 60) return `${seg}s`;
+  const m = Math.floor(seg / 60);
+  const s = seg % 60;
+  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const mr = m % 60;
+  return mr ? `${h}h ${mr}m` : `${h}h`;
+}
+
+// Volta o panorama ao estado vazio (sem busca ou sem resultados).
+function resetPanorama() {
+  const empty = document.getElementById("dashEmpty");
+  const body = document.getElementById("dashBody");
+  if (empty) empty.hidden = false;
+  if (body) body.hidden = true;
+}
+
+// Resume as sessões carregadas: total no filtro, quebra aberta/fechada da
+// visão atual e duração média. Aberta/fechada refletem a página exibida
+// (o rótulo de escopo deixa isso explícito); o total vem do filtro inteiro.
+function atualizarPanorama(registros, total) {
+  const empty = document.getElementById("dashEmpty");
+  const body = document.getElementById("dashBody");
+  if (!empty || !body) return;
+
+  const carregadas = registros.length;
+  if (carregadas === 0) {
+    resetPanorama();
+    return;
+  }
+
+  let abertas = 0;
+  let fechadas = 0;
+  let indefinidas = 0;
+  let somaSeg = 0;
+  let comDuracao = 0;
+  for (const r of registros) {
+    const st = r.status || "indefinida";
+    if (st === "aberta") abertas++;
+    else if (st === "fechada") fechadas++;
+    else indefinidas++;
+    if (typeof r.duracao_segundos === "number" && !Number.isNaN(r.duracao_segundos)) {
+      somaSeg += r.duracao_segundos;
+      comDuracao++;
+    }
+  }
+
+  const setText = (id, valor) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+  };
+  setText("kpiTotal", total);
+  setText("kpiAbertas", abertas);
+  setText("kpiFechadas", fechadas);
+  setText("kpiDuracao", comDuracao ? formatarSegundos(somaSeg / comDuracao) : "—");
+  setText("legAberta", abertas);
+  setText("legFechada", fechadas);
+  setText("legIndef", indefinidas);
+
+  const basis = (n) => `${(n / carregadas) * 100}%`;
+  const setSeg = (id, n) => {
+    const el = document.getElementById(id);
+    if (el) el.style.flexBasis = basis(n);
+  };
+  setSeg("segAberta", abertas);
+  setSeg("segFechada", fechadas);
+  setSeg("segIndef", indefinidas);
+
+  const scope = document.getElementById("dashScope");
+  if (scope) {
+    scope.textContent = carregadas < total
+      ? `${carregadas} de ${total} sessões`
+      : "visão atual";
+  }
+
+  empty.hidden = true;
+  body.hidden = false;
 }
 
 function setStatus(message, state = "default") {

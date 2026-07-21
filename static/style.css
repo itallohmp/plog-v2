@@ -58,9 +58,8 @@ body {
 .site_header_index {
   position: relative;
   z-index: 10;
-  background: rgba(0, 20, 50, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* Sólido (sem glass), consistente com os tops do login e da consulta. */
+  background: #001a3d;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
 }
@@ -823,7 +822,8 @@ body {
 .brand strong {
   display: block;
   font-size: 20px;
-  letter-spacing: 0.1em;
+  /* Mesmo tracking da marca "PLOG" dos tops de index e login. */
+  letter-spacing: 0.14em;
 }
 
 .brand span {
@@ -1024,6 +1024,7 @@ body {
 
 .hero_card,
 .filter_card,
+.dashboard_card,
 .results_card {
   border: 1px solid rgba(217, 226, 239, 0.9);
   border-radius: var(--radius-lg);
@@ -1106,9 +1107,198 @@ body {
 }
 
 .filter_card,
+.dashboard_card,
 .results_card {
   padding: 22px;
   margin-top: 18px;
+}
+
+/* Topo da consulta: filtros à esquerda, dashboard à direita (2 por linha).
+   Empilha abaixo de 1000px, mesma quebra que a barra de filtros já usa. */
+.plog_top {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.plog_top > .filter_card,
+.plog_top > .dashboard_card {
+  margin-top: 0;
+  height: 100%;
+}
+
+/* ── Dashboard: panorama das sessões ── */
+.dashboard_card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dash_empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 180px;
+  padding: 24px;
+  text-align: center;
+  color: var(--color-muted);
+  border: 1px dashed rgba(0, 44, 102, 0.16);
+  border-radius: var(--radius-md);
+  background: #f7faff;
+}
+
+.dash_empty p {
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dash_empty__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(0, 44, 102, 0.18) 43%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(0, 44, 102, 0.1) 0 30%, transparent 31%);
+}
+
+.dash_body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dash_kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dash_kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f7faff;
+}
+
+.dash_kpi__value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash_kpi__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-muted);
+}
+
+.dash_dist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash_dist__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.dash_dist__scope {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: none;
+}
+
+.dash_dist__bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #eef2f8;
+}
+
+.dash_dist__seg {
+  height: 100%;
+  transition: flex-basis 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dash_dist__seg--aberta {
+  background: #22c55e;
+}
+
+.dash_dist__seg--fechada {
+  background: #ef4444;
+}
+
+.dash_dist__seg--indefinida {
+  background: #9ca3af;
+}
+
+.dash_dist__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dash_dist__legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.dash_dist__legend b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash_dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash_dot--aberta {
+  background: #22c55e;
+}
+
+.dash_dot--fechada {
+  background: #ef4444;
+}
+
+.dash_dot--indefinida {
+  background: #9ca3af;
+}
+
+@media (max-width: 1000px) {
+  .plog_top {
+    grid-template-columns: 1fr;
+  }
 }
 
 .section_header {

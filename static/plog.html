@@ -33,6 +33,7 @@
   </header>
 
   <main class="plog_shell">
+    <div class="plog_top">
     <section class="filter_card" aria-labelledby="filterTitle">
       <div class="section_header">
         <div>
@@ -121,6 +122,59 @@
         <button id="btnBuscar" class="primary_button" type="submit">Buscar Logs</button>
       </form>
     </section>
+
+    <section class="dashboard_card" aria-labelledby="dashTitle">
+      <div class="section_header">
+        <div>
+          <h2 id="dashTitle">Panorama</h2>
+          <p id="dashHint">Resumo das sessões carregadas na visão atual.</p>
+        </div>
+      </div>
+
+      <div class="dash_empty" id="dashEmpty">
+        <span class="dash_empty__icon" aria-hidden="true"></span>
+        <p>Faça uma busca para ver o panorama das sessões NAT.</p>
+      </div>
+
+      <div class="dash_body" id="dashBody" hidden>
+        <div class="dash_kpis">
+          <div class="dash_kpi">
+            <span class="dash_kpi__value" id="kpiTotal">0</span>
+            <span class="dash_kpi__label">Sessões no filtro</span>
+          </div>
+          <div class="dash_kpi">
+            <span class="dash_kpi__value" id="kpiAbertas">0</span>
+            <span class="dash_kpi__label">Abertas na visão</span>
+          </div>
+          <div class="dash_kpi">
+            <span class="dash_kpi__value" id="kpiFechadas">0</span>
+            <span class="dash_kpi__label">Fechadas na visão</span>
+          </div>
+          <div class="dash_kpi">
+            <span class="dash_kpi__value" id="kpiDuracao">—</span>
+            <span class="dash_kpi__label">Duração média</span>
+          </div>
+        </div>
+
+        <div class="dash_dist">
+          <div class="dash_dist__head">
+            <span>Distribuição por estado</span>
+            <span class="dash_dist__scope" id="dashScope">visão atual</span>
+          </div>
+          <div class="dash_dist__bar" id="dashBar" role="img" aria-label="Distribuição por estado das sessões carregadas">
+            <span class="dash_dist__seg dash_dist__seg--aberta" id="segAberta"></span>
+            <span class="dash_dist__seg dash_dist__seg--fechada" id="segFechada"></span>
+            <span class="dash_dist__seg dash_dist__seg--indefinida" id="segIndef"></span>
+          </div>
+          <ul class="dash_dist__legend">
+            <li><span class="dash_dot dash_dot--aberta" aria-hidden="true"></span>Aberta <b id="legAberta">0</b></li>
+            <li><span class="dash_dot dash_dot--fechada" aria-hidden="true"></span>Fechada <b id="legFechada">0</b></li>
+            <li><span class="dash_dot dash_dot--indefinida" aria-hidden="true"></span>Indefinida <b id="legIndef">0</b></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <section class="results_card" aria-labelledby="resultsTitle">
       <div class="section_header">
