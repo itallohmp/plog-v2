@@ -1,11 +1,5 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from pwdlib import PasswordHash
-from sqlalchemy.orm import Session
-
 from app.core.config import (
     API_PREFIX,
     FLOW_ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -14,6 +8,11 @@ from app.core.config import (
 )
 from app.database.db import get_db
 from app.models.user import User
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pwdlib import PasswordHash
+from sqlalchemy.orm import Session
 
 password_hash = PasswordHash.recommended()
 
