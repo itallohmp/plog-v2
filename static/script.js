@@ -738,14 +738,28 @@ function atualizarPanorama(resumo) {
   setText("legFechada", fechadas);
   setText("legIndef", indefinidas);
 
-  const basis = (n) => `${(n / total) * 100}%`;
-  const setSeg = (id, n) => {
-    const el = document.getElementById(id);
-    if (el) el.style.flexBasis = basis(n);
-  };
-  setSeg("segAberta", abertas);
-  setSeg("segFechada", fechadas);
-  setSeg("segIndef", indefinidas);
+  // Rosca aberto x fechado. Indefinidas ficam fora da proporção (o gráfico é
+  // só sobre aberto/fechado), mas continuam contadas na nota da legenda.
+  const base = abertas + fechadas;
+  const ring = document.getElementById("donutRing");
+  if (ring) {
+    if (base > 0) {
+      const pctAberta = (abertas / base) * 100;
+      ring.style.background =
+        `conic-gradient(#22c55e 0 ${pctAberta}%, #ef4444 ${pctAberta}% 100%)`;
+      ring.setAttribute(
+        "aria-label",
+        `${abertas} aberta(s) e ${fechadas} fechada(s)`
+      );
+    } else {
+      ring.style.background = "conic-gradient(#e5e7eb 0 100%)";
+      ring.setAttribute("aria-label", "Sem sessões abertas ou fechadas");
+    }
+  }
+  setText("donutValue", base);
+
+  const indefWrap = document.getElementById("legIndefWrap");
+  if (indefWrap) indefWrap.hidden = indefinidas === 0;
 
   // Quebra por protocolo: TCP/UDP/ICMP primeiro, demais em seguida; só os > 0.
   const proto = resumo.por_protocolo || {};

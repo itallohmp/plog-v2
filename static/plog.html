@@ -158,19 +158,22 @@
 
         <div class="dash_dist">
           <div class="dash_dist__head">
-            <span>Distribuição por estado</span>
+            <span>Aberto × fechado</span>
             <span class="dash_dist__scope" id="dashScope">todo o filtro</span>
           </div>
-          <div class="dash_dist__bar" id="dashBar" role="img" aria-label="Distribuição por estado das sessões do filtro">
-            <span class="dash_dist__seg dash_dist__seg--aberta" id="segAberta"></span>
-            <span class="dash_dist__seg dash_dist__seg--fechada" id="segFechada"></span>
-            <span class="dash_dist__seg dash_dist__seg--indefinida" id="segIndef"></span>
+          <div class="dash_donut">
+            <div class="dash_donut__ring" id="donutRing" role="img" aria-label="Proporção de sessões abertas e fechadas">
+              <div class="dash_donut__hole">
+                <span class="dash_donut__value" id="donutValue">0</span>
+                <span class="dash_donut__cap">sessões</span>
+              </div>
+            </div>
+            <ul class="dash_dist__legend dash_donut__legend">
+              <li><span class="dash_dot dash_dot--aberta" aria-hidden="true"></span>Aberta <b id="legAberta">0</b></li>
+              <li><span class="dash_dot dash_dot--fechada" aria-hidden="true"></span>Fechada <b id="legFechada">0</b></li>
+              <li class="dash_donut__indef" id="legIndefWrap" hidden><span class="dash_dot dash_dot--indefinida" aria-hidden="true"></span>Indefinida <b id="legIndef">0</b></li>
+            </ul>
           </div>
-          <ul class="dash_dist__legend">
-            <li><span class="dash_dot dash_dot--aberta" aria-hidden="true"></span>Aberta <b id="legAberta">0</b></li>
-            <li><span class="dash_dot dash_dot--fechada" aria-hidden="true"></span>Fechada <b id="legFechada">0</b></li>
-            <li><span class="dash_dot dash_dot--indefinida" aria-hidden="true"></span>Indefinida <b id="legIndef">0</b></li>
-          </ul>
           <p class="dash_proto" id="dashProto" hidden></p>
         </div>
       </div>
