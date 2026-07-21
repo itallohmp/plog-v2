@@ -1263,6 +1263,47 @@ body {
   color: var(--color-accent);
 }
 
+/* Selo de estado da sessao NAT na tabela. Reusa a paleta verde/vermelha/cinza
+   ja adotada em .status_badge e .user_status. */
+.session_badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.session_badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.session_badge[data-state="aberta"] {
+  background: #e7f8ee;
+  color: #14703d;
+}
+
+.session_badge[data-state="fechada"] {
+  background: #fde8e8;
+  color: #a11717;
+}
+
+.session_badge[data-state="indefinida"] {
+  background: #edf0f5;
+  color: #4b5563;
+}
+
+.session_badge--parcial {
+  border: 1px dashed currentColor;
+}
+
 /* Grupo de protocolos: ocupa a mesma faixa de 44px dos inputs, para nao
    quebrar a linha de base horizontal da barra de filtros. */
 .checkbox_row {

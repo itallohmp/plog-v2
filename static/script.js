@@ -335,28 +335,55 @@ function clearTable() {
   if (tbody) tbody.innerHTML = "";
 }
 
+const STATUS_ROTULO = {
+  aberta: "Aberta",
+  fechada: "Fechada",
+  indefinida: "Indefinida",
+};
+
+function formatTimestamp(valor) {
+  if (!valor) return "-";
+  // ISO "2026-07-15T18:48:41.045" -> "2026-07-15 18:48:41"
+  return String(valor).replace("T", " ").slice(0, 19);
+}
+
+function statusBadge(obj) {
+  const status = obj.status || "indefinida";
+  const rotulo = STATUS_ROTULO[status] || status;
+  let titulo = "";
+  if (status === "aberta" && obj.verificado_ate) {
+    titulo = `Sem fechamento até ${obj.verificado_ate}`;
+  } else if (status === "fechada" && obj.parcial) {
+    titulo = "Abertura anterior ao período consultado";
+  }
+  const marca = obj.parcial ? " session_badge--parcial" : "";
+  const attrTitulo = titulo ? ` title="${escapeHtml(titulo)}"` : "";
+  return `<span class="session_badge${marca}" data-state="${escapeHtml(status)}"${attrTitulo}>${escapeHtml(rotulo)}</span>`;
+}
+
 function appendRow(obj) {
   const tbody = document.querySelector("#tabelaLogs tbody");
   if (!tbody) return;
 
-  const data = obj.data || "-";
-  const evento = obj.evento || "-";
+  const abertura = formatTimestamp(obj.abertura || obj.data);
+  const fechamento = formatTimestamp(obj.fechamento);
+  const duracao = obj.duracao || "-";
   const protocolo = obj.protocolo || "-";
   const origem = obj.origem || "-";
   const nat = obj.nat || "-";
   const blocoPortas = obj.bloco_portas || obj.porta_origem || obj.porta_destino || "-";
-  const destino = obj.destino || "-";
   const roteador = obj.roteador || obj.destino_final || "-";
 
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td>${escapeHtml(data)}</td>
-    <td>${escapeHtml(evento)}</td>
+    <td>${statusBadge(obj)}</td>
+    <td>${escapeHtml(abertura)}</td>
+    <td>${escapeHtml(fechamento)}</td>
+    <td>${escapeHtml(duracao)}</td>
     <td>${escapeHtml(protocolo)}</td>
     <td>${escapeHtml(origem)}</td>
     <td>${escapeHtml(nat)}</td>
     <td>${escapeHtml(blocoPortas)}</td>
-    <td>${escapeHtml(destino)}</td>
     <td>${escapeHtml(roteador)}</td>
   `;
   tbody.appendChild(tr);
@@ -503,7 +530,7 @@ function renderEmptyRow(message) {
   if (!tbody) return;
   tbody.innerHTML = `
     <tr class="empty_row">
-      <td colspan="8">${escapeHtml(message)}</td>
+      <td colspan="9">${escapeHtml(message)}</td>
     </tr>
   `;
 }
