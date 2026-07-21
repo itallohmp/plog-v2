@@ -39,6 +39,15 @@ NFDUMP_TIMEOUT = int(os.getenv("PLOG_NFDUMP_TIMEOUT", "120"))
 
 FLOW_LOCAL_PATH = os.getenv("PLOG_FLOW_LOCAL_PATH") or None
 
+# Resolucao de sessoes NAT abertas (create sem delete na janela consultada).
+# Quando ligado, o service consulta o nfdump filtrado pelas chaves pendentes
+# no range (dia seguinte -> hoje) para descobrir se ja fecharam. Desligavel
+# porque a sintaxe de filtro NAT do nfdump varia por versao e precisa ser
+# confirmada contra o binario do servidor antes de ser confiavel.
+NAT_LOOKAHEAD_ATIVO = os.getenv("PLOG_NAT_LOOKAHEAD", "1") not in ("0", "false", "False")
+# Teto de chaves pendentes por consulta, para nao gerar expressao gigante.
+NAT_LOOKAHEAD_MAX_CHAVES = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_CHAVES", "200"))
+
 NFDUMP_LOCAL_BIN = os.getenv("PLOG_NFDUMP_LOCAL_BIN", "nfdump")
 FLOW_NFCAPD_PREFIX = os.getenv("PLOG_FLOW_NFCAPD_PREFIX", "nfcapd")
 
