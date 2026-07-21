@@ -1,0 +1,52 @@
+#!/bin/sh
+# commit-msg hook: exige Conventional Commits em INGLES.
+#
+# Ativar uma vez por clone:
+#     git config core.hooksPath .githooks
+#
+# Formato aceito no assunto (primeira linha):
+#     <type>(<scope>): <description>
+# Tipos: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+# Ex.:  feat(flows): add protocol filter
+
+msg_file="$1"
+
+# Primeira linha nao-comentario e nao-vazia = o assunto do commit.
+subject=$(grep -v '^#' "$msg_file" | sed '/^[[:space:]]*$/d' | head -n1)
+
+# Commits de merge/revert gerados pelo git passam direto.
+case "$subject" in
+    "Merge "* | "Revert "*) exit 0 ;;
+esac
+
+erro() {
+    echo "" >&2
+    echo "  commit-msg: $1" >&2
+    echo "" >&2
+    echo "  Use Conventional Commits em ingles:" >&2
+    echo "      <type>(<scope>): <description>" >&2
+    echo "  Tipos: feat fix docs style refactor perf test build ci chore revert" >&2
+    echo "  Ex.:  feat(flows): add session state filter" >&2
+    echo "" >&2
+    echo "  Assunto recebido: $subject" >&2
+    echo "" >&2
+    exit 1
+}
+
+# 1) Formato Conventional Commits.
+if ! printf '%s' "$subject" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._-]+\))?!?: .+'; then
+    erro "assunto fora do formato Conventional Commits."
+fi
+
+# 2) Ingles: rejeita qualquer byte fora do ASCII imprimivel (acentos, cedilha).
+if printf '%s' "$subject" | LC_ALL=C grep -q '[^ -~]'; then
+    erro "o assunto deve estar em ingles (caractere acentuado/nao-ASCII)."
+fi
+
+# 3) Ingles: rejeita palavras portuguesas comuns e inequivocas.
+palavras_pt='adiciona|adicionar|corrige|corrigir|atualiza|atualizar|criar|remover|melhora|melhorar|ajusta|ajustar|implementa|refatora|arquivo|funcao|versao|exclui|excluir|altera|alterar'
+if printf '%s' "$subject" | grep -Eiqw "($palavras_pt)"; then
+    erro "o assunto deve estar em ingles (palavra em portugues detectada)."
+fi
+
+exit 0
