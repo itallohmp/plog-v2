@@ -1436,14 +1436,9 @@ button:disabled {
   box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
-#tabelaLogs td:nth-child(1),
-#tabelaLogs td:nth-child(2),
-#tabelaLogs td:nth-child(3),
-#tabelaLogs td:nth-child(4),
-#tabelaLogs td:nth-child(5),
-#tabelaLogs td:nth-child(6),
-#tabelaLogs td:nth-child(7),
-#tabelaLogs td:nth-child(8) {
+/* Dados tecnicos (IPs, portas, timestamps) em monoespacada; a 1a coluna e o
+   selo de Status, que fica na fonte sans como rotulo. */
+#tabelaLogs td:not(:first-child) {
   font-family: var(--font-mono);
   font-size: 13px;
   color: #1e293b;
