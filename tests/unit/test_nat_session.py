@@ -9,8 +9,27 @@ from datetime import datetime, timezone
 from app.parsers.nat_session import (
     classificar_evento,
     chave_sessao,
+    correlacionar,
     timestamp_evento,
 )
+
+
+def _ev(dia_hora, classe, *, origem="172.16.10.17", nat="177.137.21.38",
+        pblock_start=4096, roteador="172.16.2.1"):
+    """Evento NAT com timestamp e chave completos (create/delete pareáveis)."""
+    nat_event = {
+        "create": "NAT translation create",
+        "delete": "NAT translation delete",
+    }.get(classe, "EVENT")
+    return {
+        "t_first": f"2026-07-15T{dia_hora}",
+        "nat_event": nat_event,
+        "ip4_router": roteador,
+        "src4_addr": origem,
+        "src4_xlt_ip": nat,
+        "pblock_start": pblock_start,
+        "pblock_size": 512,
+    }
 
 
 class TestClassificarEvento:
@@ -120,3 +139,103 @@ class TestTimestampEvento:
         a = timestamp_evento({"t_first": "2026-07-15T10:00:00Z"})
         b = timestamp_evento({"t_first": "2026-07-15T11:00:00"})
         assert a < b
+
+
+class TestCorrelacionar:
+    def test_par_vira_sessao_fechada_com_duracao(self):
+        """NAT-01: create + delete da mesma chave -> 1 sessao fechada com duracao."""
+        eventos = [_ev("10:00:00", "create"), _ev("10:00:10", "delete")]
+        r = correlacionar(eventos)
+
+        assert len(r.sessoes) == 1
+        s = r.sessoes[0]
+        assert s.status == "fechada"
+        assert s.duracao_segundos == 10.0
+        assert s.eventos == 2
+        assert r.pendentes == []
+
+    def test_create_sozinho_fica_aberta(self):
+        """NAT-02: create sem delete -> sessao aberta e pendente."""
+        r = correlacionar([_ev("10:00:00", "create")])
+
+        assert len(r.sessoes) == 1
+        assert r.sessoes[0].status == "aberta"
+        assert r.sessoes[0].fechamento is None
+        assert len(r.pendentes) == 1
+        assert r.pendentes[0] is r.sessoes[0]
+
+    def test_delete_orfao_fica_fechada_parcial(self):
+        """NAT-03: delete sem create na janela -> fechada, parcial, sem abertura."""
+        r = correlacionar([_ev("10:00:10", "delete")])
+
+        s = r.sessoes[0]
+        assert s.status == "fechada"
+        assert s.parcial is True
+        assert s.abertura is None
+        assert r.pendentes == []
+
+    def test_realocacao_nao_cruza_assinantes(self):
+        """NAT-04: create A, delete A, create B, delete B na MESMA chave ->
+        duas sessoes independentes, sem o delete de B fechar a sessao de A.
+
+        Este e o teste que o sensor de mutacao exercita: trocar a pilha por
+        dict[chave]=create faz o delete de B fechar a sessao de A.
+        """
+        eventos = [
+            _ev("10:00:00", "create"),  # A abre
+            _ev("10:00:05", "delete"),  # A fecha (duracao 5s)
+            _ev("11:00:00", "create"),  # B abre (mesma chave, realocado)
+            _ev("11:00:20", "delete"),  # B fecha (duracao 20s)
+        ]
+        r = correlacionar(eventos)
+
+        assert len(r.sessoes) == 2
+        duracoes = sorted(s.duracao_segundos for s in r.sessoes)
+        assert duracoes == [5.0, 20.0]
+        assert all(s.status == "fechada" for s in r.sessoes)
+        assert r.pendentes == []
+
+    def test_indefinidos_preservados_um_a_um(self):
+        """NAT-05: eventos sem chave/classe nao somem; viram sessoes indefinidas."""
+        eventos = [
+            {"type": "EVENT", "t_first": "2026-07-15T10:00:00", "src4_addr": "10.0.0.1"},
+            {"type": "EVENT", "t_first": "2026-07-15T10:00:01", "src4_addr": "10.0.0.2"},
+        ]
+        r = correlacionar(eventos)
+
+        assert len(r.sessoes) == 2
+        assert all(s.status == "indefinida" for s in r.sessoes)
+        assert r.pendentes == []
+
+    def test_ordem_de_entrada_nao_importa(self):
+        """NAT-06: delete que chega ANTES do create na lista ainda pareia pela
+        ordem cronologica real (timestamp), nao pela ordem de entrada."""
+        eventos = [_ev("10:00:10", "delete"), _ev("10:00:00", "create")]
+        r = correlacionar(eventos)
+
+        assert len(r.sessoes) == 1
+        assert r.sessoes[0].status == "fechada"
+        assert r.sessoes[0].duracao_segundos == 10.0
+        assert r.sessoes[0].parcial is False
+
+    def test_duas_abertas_mesma_chave_fecha_a_mais_recente(self):
+        """Edge (LIFO): duas sessoes abertas na mesma chave -> o delete fecha a
+        mais recente, deixando a antiga aberta."""
+        eventos = [
+            _ev("10:00:00", "create"),
+            _ev("10:30:00", "create"),
+            _ev("11:00:00", "delete"),
+        ]
+        r = correlacionar(eventos)
+
+        assert len(r.sessoes) == 2
+        fechadas = [s for s in r.sessoes if s.status == "fechada"]
+        abertas = [s for s in r.sessoes if s.status == "aberta"]
+        assert len(fechadas) == 1 and len(abertas) == 1
+        # a fechada e a que abriu as 10:30 (duracao 30min = 1800s)
+        assert fechadas[0].duracao_segundos == 1800.0
+
+    def test_lista_vazia(self):
+        r = correlacionar([])
+        assert r.sessoes == []
+        assert r.pendentes == []

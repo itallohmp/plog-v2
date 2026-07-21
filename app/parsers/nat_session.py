@@ -6,8 +6,10 @@ aqui ficam as tres primitivas: classificar o evento, extrair a chave de sessao
 e obter o timestamp real.
 """
 
+from collections import defaultdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.parsers.pcap_parser import _as_int, _first_value
 
@@ -86,3 +88,112 @@ def timestamp_evento(evento: Dict[str, Any]) -> Optional[datetime]:
         # Normaliza para UTC-naive: evita TypeError ao comparar naive vs aware.
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
+
+
+@dataclass
+class Sessao:
+    """Uma traducao NAT correlacionada (um ou dois eventos)."""
+
+    chave: Optional[ChaveSessao]
+    status: str  # "aberta" | "fechada" | "indefinida"
+    ancora: Dict[str, Any]  # evento usado para os campos de exibicao
+    abertura: Optional[datetime] = None
+    fechamento: Optional[datetime] = None
+    parcial: bool = False
+    eventos: int = 1
+    ordem: int = 0  # indice original do evento ancora, para ordenar a saida
+    evento_create: Optional[Dict[str, Any]] = None
+    evento_delete: Optional[Dict[str, Any]] = None
+
+    @property
+    def duracao_segundos(self) -> Optional[float]:
+        if self.abertura is not None and self.fechamento is not None:
+            return (self.fechamento - self.abertura).total_seconds()
+        return None
+
+    def fechar(self, fechamento: datetime, evento_delete: Dict[str, Any]) -> None:
+        self.status = "fechada"
+        self.fechamento = fechamento
+        self.evento_delete = evento_delete
+        self.eventos += 1
+
+
+@dataclass
+class CorrelacaoResultado:
+    sessoes: List[Sessao] = field(default_factory=list)
+    pendentes: List[Sessao] = field(default_factory=list)
+
+
+def correlacionar(eventos: List[Dict[str, Any]]) -> CorrelacaoResultado:
+    """Agrupa eventos NAT em sessoes, pareando create+delete cronologicamente.
+
+    O pareamento usa uma PILHA por chave (LIFO): cada delete fecha o create mais
+    recente ainda aberto daquela chave. Isso e o que impede misturar assinantes
+    quando o mesmo bloco e realocado depois do delete — um dict[chave]=create
+    faria o delete de um assinante fechar a sessao de outro.
+
+    A saida (`sessoes`) fica ordenada pelo indice original do evento ancora;
+    `pendentes` sao as sessoes que ficaram abertas (create sem delete na janela).
+    """
+    anotados = []
+    for indice, evento in enumerate(eventos):
+        classe = classificar_evento(evento)
+        chave = chave_sessao(evento)
+        ts = timestamp_evento(evento)
+        pareavel = classe in ("create", "delete") and chave is not None and ts is not None
+        anotados.append((indice, evento, classe, chave, ts, pareavel))
+
+    # Ordem cronologica real para o pareamento; desempate estavel pelo indice.
+    ordem_cronologica = sorted(anotados, key=lambda a: (a[4] or datetime.min, a[0]))
+
+    sessoes: List[Sessao] = []
+    abertas: Dict[ChaveSessao, List[Sessao]] = defaultdict(list)
+
+    for indice, evento, classe, chave, ts, pareavel in ordem_cronologica:
+        if not pareavel:
+            sessoes.append(
+                Sessao(
+                    chave=chave,
+                    status="indefinida",
+                    ancora=evento,
+                    abertura=ts,
+                    ordem=indice,
+                )
+            )
+            continue
+
+        if classe == "create":
+            sessao = Sessao(
+                chave=chave,
+                status="aberta",
+                ancora=evento,
+                abertura=ts,
+                ordem=indice,
+                evento_create=evento,
+            )
+            abertas[chave].append(sessao)
+            sessoes.append(sessao)
+        else:  # delete
+            pilha = abertas.get(chave)
+            if pilha:
+                pilha.pop().fechar(ts, evento)
+                if not pilha:
+                    abertas.pop(chave, None)
+            else:
+                # Delete orfao: create ocorreu antes da janela consultada.
+                sessoes.append(
+                    Sessao(
+                        chave=chave,
+                        status="fechada",
+                        ancora=evento,
+                        abertura=None,
+                        fechamento=ts,
+                        parcial=True,
+                        ordem=indice,
+                        evento_delete=evento,
+                    )
+                )
+
+    sessoes.sort(key=lambda s: s.ordem)
+    pendentes = [sessao for pilha in abertas.values() for sessao in pilha]
+    return CorrelacaoResultado(sessoes=sessoes, pendentes=pendentes)
