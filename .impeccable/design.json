@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-21T00:00:00Z",
+  "title": "Design System: PLog",
+  "extensions": {
+    "colorMeta": {
+      "azul-institucional": { "role": "primary", "displayName": "Azul Institucional", "canonical": "#002c66", "tonalRamp": ["#001129", "#001f47", "#002c66", "#06458f", "#2f6bb0", "#6a95cc", "#a9c4e3", "#d7e4f4"] },
+      "laranja-sinal": { "role": "secondary", "displayName": "Laranja Sinal", "canonical": "#ff6600", "tonalRamp": ["#5c2500", "#8a3800", "#b84a00", "#e65c00", "#ff6600", "#ff8c40", "#ffb480", "#ffdcc0"] },
+      "fundo": { "role": "neutral", "displayName": "Fundo Azul-Acinzentado", "canonical": "#f3f6fb", "tonalRamp": ["#0c1622", "#1c2b3d", "#33475e", "#5a708c", "#8ea3bd", "#bccadd", "#dce5f1", "#f3f6fb"] },
+      "tinta": { "role": "neutral", "displayName": "Tinta", "canonical": "#172033", "tonalRamp": ["#0a0f18", "#172033", "#2c3a52", "#455470", "#6b7a95", "#9aa6bc", "#c7cfdd", "#e9edf4"] },
+      "aberta-tinta": { "role": "success", "displayName": "Verde Aberta", "canonical": "#14703d", "tonalRamp": ["#08331b", "#0e5230", "#14703d", "#1f9455", "#39b673", "#6fce9a", "#a9e4c4", "#e7f8ee"] },
+      "fechada-tinta": { "role": "danger", "displayName": "Vermelho Fechada", "canonical": "#a11717", "tonalRamp": ["#4d0b0b", "#761111", "#a11717", "#cc2727", "#e64d4d", "#f08585", "#f7b8b8", "#fde8e8"] }
+    },
+    "typographyMeta": {
+      "heading": { "displayName": "Heading", "purpose": "Títulos de seção (Filtros, Resultados)." },
+      "label": { "displayName": "Label", "purpose": "Rótulos de campo e cabeçalhos de tabela; caixa-alta espaçada." },
+      "data": { "displayName": "Data", "purpose": "Dados técnicos monoespaçados: IPs, portas, timestamps, blocos." }
+    },
+    "shadows": [
+      { "name": "cartao", "value": "0 18px 45px rgba(15, 23, 42, 0.08)", "purpose": "Elevação principal dos cartões." },
+      { "name": "suave", "value": "0 4px 24px rgba(0, 44, 102, 0.06)", "purpose": "Reforço curto na cor da marca, junto da sombra de cartão." },
+      { "name": "glow", "value": "0 0 60px rgba(255, 102, 0, 0.08)", "purpose": "Halo laranja atmosférico raríssimo; nunca hierarquia." },
+      { "name": "foco", "value": "0 0 0 4px rgba(0, 44, 102, 0.1)", "purpose": "Anel de foco azul em inputs e selects." }
+    ],
+    "motion": [
+      { "name": "estado-padrao", "value": "160ms ease", "purpose": "Transições de estado em botões e controles (transform/box-shadow/background)." },
+      { "name": "linha-hover", "value": "120ms ease", "purpose": "Realce de linha da tabela no hover." }
+    ],
+    "breakpoints": [
+      { "name": "compacto", "value": "1000px" },
+      { "name": "mobile", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação primária (Buscar Logs); única superfície com gradiente no sistema.",
+      "html": "<button class=\"ds-btn-primary\">Buscar Logs</button>",
+      "css": ".ds-btn-primary { min-height: 44px; padding: 8px 20px; border: none; border-radius: 12px; background: linear-gradient(135deg, #002c66, #06458f); color: #fff; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease; } .ds-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,44,102,0.25); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0,44,102,0.25); }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo de filtro; largura dimensionada pelo conteúdo, foco com anel azul.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Ex: 177.137.21.3\">",
+      "css": ".ds-input { min-height: 44px; width: 100%; padding: 10px 12px; border: 1px solid #d9e2ef; border-radius: 12px; background: #fff; color: #172033; font-family: Inter, system-ui, sans-serif; font-size: 15px; transition: border-color 180ms ease, box-shadow 180ms ease; } .ds-input:focus { outline: none; border-color: #06458f; box-shadow: 0 0 0 4px rgba(0,44,102,0.1); }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Checkbox de filtro (Protocolo/Estado); controle nativo com accent azul.",
+      "html": "<label class=\"ds-chip\"><input type=\"checkbox\" checked><span>TCP</span></label>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: #172033; font-family: Inter, system-ui, sans-serif; font-size: 14px; cursor: pointer; user-select: none; } .ds-chip input[type=checkbox] { width: 17px; height: 17px; border-radius: 4px; accent-color: #002c66; cursor: pointer; } .ds-chip input:focus-visible { outline: 2px solid #06458f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Badge (Aberta)",
+      "kind": "custom",
+      "refersTo": "badge-aberta",
+      "description": "Selo verde de sessão aberta; dot + rótulo (cor nunca sozinha).",
+      "html": "<span class=\"ds-badge ds-badge--aberta\">Aberta</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 700; white-space: nowrap; } .ds-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; } .ds-badge--aberta { background: #e7f8ee; color: #14703d; }"
+    },
+    {
+      "name": "Status Badge (Fechada)",
+      "kind": "custom",
+      "refersTo": "badge-fechada",
+      "description": "Selo vermelho de sessão fechada; borda tracejada quando parcial.",
+      "html": "<span class=\"ds-badge ds-badge--fechada\">Fechada</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 700; white-space: nowrap; } .ds-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; } .ds-badge--fechada { background: #fde8e8; color: #a11717; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contêiner branco de seção (filtros/resultados) sobre o fundo azul-acinzentado.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card__title\">Filtros</h2></section>",
+      "css": ".ds-card { border-radius: 18px; background: #fff; box-shadow: 0 18px 45px rgba(15,23,42,0.08), 0 4px 24px rgba(0,44,102,0.06); padding: 24px 28px; } .ds-card__title { margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 18px; font-weight: 800; color: #002c66; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Painel Institucional",
+    "overview": "O PLog é o sistema oficial de um provedor para responder, em segundos, quem usava um IP público. Azul-marinho institucional domina a moldura; o laranja da marca aparece como sinal, nunca como decoração. Sóbrio, ordenado e confiável, com densidade a serviço do plantão e a tabela como herói da tela.",
+    "keyCharacteristics": [
+      "Azul institucional como moldura; laranja como sinal escasso.",
+      "Dados sempre em monoespaçada; rótulos em Inter caixa-alta espaçada.",
+      "A tabela é o herói; o chrome recua.",
+      "Estado (aberta/fechada) legível por rótulo e cor, nunca só cor.",
+      "Cartões brancos, cantos suaves, sombras difusas e discretas."
+    ],
+    "rules": [
+      { "name": "A Regra do Sinal", "body": "O laranja (#ff6600) é sinal, não enfeite; marca o que exige atenção e ocupa <= 5% de qualquer tela.", "section": "colors" },
+      { "name": "A Regra do Estado por Cor + Rótulo", "body": "Verde e vermelho são exclusivos do estado da sessão e sempre acompanham um rótulo de texto.", "section": "colors" },
+      { "name": "A Regra do Dado Monoespaçado", "body": "Todo dado técnico é renderizado em JetBrains Mono; o selo de Status é a única exceção na tabela.", "section": "typography" },
+      { "name": "A Regra Plana em Repouso", "body": "Superfícies são planas por padrão; a única sombra permanente é a do cartão.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar azul institucional (#002c66) para a moldura (cabeçalho, ação primária, títulos, foco).",
+      "Do renderizar todo dado técnico em JetBrains Mono.",
+      "Do acompanhar o estado da sessão de um rótulo de texto, sempre.",
+      "Do manter contraste alto (corpo >= 4.5:1); tinta #172033 sobre branco.",
+      "Do dimensionar campos de filtro pela largura do conteúdo.",
+      "Do deixar a tabela ser o herói; o chrome recua."
+    ],
+    "donts": [
+      "Don't parecer um blog ou peça editorial.",
+      "Don't cair em SaaS genérico (gradientes decorativos, big number, grades de cards iguais).",
+      "Don't virar terminal cru sem hierarquia.",
+      "Don't usar o laranja como preenchimento; é sinal, <= 5% da tela.",
+      "Don't usar border-left/right colorida > 1px como faixa decorativa.",
+      "Don't aplicar gradiente em nada além do botão primário.",
+      "Don't comunicar estado apenas por cor."
+    ]
+  }
+}
