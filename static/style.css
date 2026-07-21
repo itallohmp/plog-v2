@@ -1075,6 +1075,48 @@ body {
   text-transform: uppercase;
 }
 
+/* No plog (fundo claro) o eyebrow laranja reprova contraste (2.9:1); usa o
+   azul institucional. Nos heros escuros (login/index) o laranja permanece. */
+.body_plog .eyebrow {
+  color: var(--color-primary) !important;
+}
+
+/* Feedback de estado da busca no resumo de resultados (aria-live no HTML):
+   um dot colorido por estado, definido por setStatus() em script.js. */
+#resultSummary::before {
+  content: "";
+  display: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+#resultSummary[data-state="loading"]::before,
+#resultSummary[data-state="error"]::before,
+#resultSummary[data-state="empty"]::before,
+#resultSummary[data-state="success"]::before {
+  display: inline-block;
+}
+#resultSummary[data-state="loading"]::before {
+  background: var(--color-accent);
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+#resultSummary[data-state="error"]::before {
+  background: #a11717;
+}
+#resultSummary[data-state="empty"]::before {
+  background: #6b7280;
+}
+#resultSummary[data-state="success"]::before {
+  background: #14703d;
+}
+@media (prefers-reduced-motion: reduce) {
+  #resultSummary[data-state="loading"]::before {
+    animation: none;
+  }
+}
+
 .filter_card,
 .results_card {
   padding: 22px;
@@ -1260,7 +1302,9 @@ body {
 }
 
 .field_req {
-  color: var(--color-accent);
+  /* Laranja-sinal escurecido para passar AA (~5.5:1) sobre o card branco;
+     mantém a semântica de "atenção/obrigatório". Significado também no title. */
+  color: #b34700;
 }
 
 /* Selo de estado da sessao NAT na tabela. Reusa a paleta verde/vermelha/cinza

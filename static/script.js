@@ -546,8 +546,9 @@ function renderEmptyRow(message) {
 }
 
 function setStatus(message, state = "default") {
-  const statusEl = document.getElementById("status");
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.dataset.state = state;
+  // O feedback de estado vive no resumo de resultados (aria-live), que ganha
+  // um dot colorido por estado. A mensagem detalhada é definida separadamente.
+  const summaryEl = document.getElementById("resultSummary");
+  if (!summaryEl) return;
+  summaryEl.dataset.state = state;
 }
