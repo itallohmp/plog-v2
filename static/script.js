@@ -296,6 +296,13 @@ function getSelectedProtocols() {
   );
 }
 
+function getSelectedStatus() {
+  return Array.from(
+    document.querySelectorAll('input[name="status"]:checked'),
+    (checkbox) => checkbox.value
+  );
+}
+
 function buildUrl(page = 1) {
   const pageSize = document.getElementById("pageSize")?.value || "100";
   const ip = document.getElementById("ip")?.value.trim() || "";
@@ -303,6 +310,7 @@ function buildUrl(page = 1) {
   const day = document.getElementById("day")?.value || "";
   const dayEnd = document.getElementById("dayEnd")?.value || "";
   const protocolos = getSelectedProtocols();
+  const estados = getSelectedStatus();
   const horaDe = document.getElementById("horaDe")?.value.trim() || "";
   const horaAte = document.getElementById("horaAte")?.value.trim() || "";
 
@@ -322,6 +330,8 @@ function buildUrl(page = 1) {
   if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
   // Um parametro "protocolo" por protocolo marcado; nenhum marcado = todos.
   for (const protocolo of protocolos) params.append("protocolo", protocolo);
+  // Idem para o estado da sessao (aberta/fechada).
+  for (const estado of estados) params.append("status", estado);
   if (ip) params.set("ip", ip);
   if (porta) params.set("porta", porta);
   if (horaDe) params.set("hora_de", horaDe);

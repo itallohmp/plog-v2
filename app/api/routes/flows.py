@@ -39,6 +39,9 @@ def listar_flows(
     protocolo: Optional[List[str]] = Query(
         None, description="Protocolos: tcp, udp e/ou icmp (repetivel; vazio = todos)"
     ),
+    status: Optional[List[str]] = Query(
+        None, description="Estados: aberta, fechada e/ou indefinida (repetivel)"
+    ),
     hora_de: Optional[int] = Query(None, ge=0, le=23),
     hora_ate: Optional[int] = Query(None, ge=0, le=23),
     pagina: int = Query(1, ge=1),
@@ -53,6 +56,7 @@ def listar_flows(
             ip=ip,
             porta=porta,
             protocolo=protocolo,
+            status=status,
             hora_de=hora_de,
             hora_ate=hora_ate,
             pagina=pagina,

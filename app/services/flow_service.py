@@ -116,7 +116,13 @@ class FlowService:
         # precisam estar juntos, o que nao aconteceria se fatiassemos primeiro.
         resultado = correlacionar(filtrados)
         self._resolver_pendentes(resultado, dias[-1])
+
+        # Filtro por estado APOS a resolucao: uma pendente fechada pelo
+        # lookahead ja conta como "fechada" aqui.
         sessoes = resultado.sessoes
+        estados = query.estados_filtro()
+        if estados is not None:
+            sessoes = [s for s in sessoes if s.status in estados]
 
         total = len(sessoes)
         total_paginas = max(1, ceil(total / query.tamanho_pagina)) if total else 1
