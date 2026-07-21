@@ -79,3 +79,5 @@ requirements.txt
 pyproject.toml
 
 # .cursor
+# Impeccable live: journals de sessão transitórios (estado local)
+.impeccable/live/sessions/
