@@ -36,12 +36,11 @@ fechamento, duração e um selo de estado (verde = aberta, vermelho = fechada).
 | Evento não classificável / sem chave / sem timestamp | Vira sessão "indefinida" de 1 evento | Nada some da tela; preserva comportamento atual | y |
 | Strings de evento | `create`/`delete` reconhecidos por substring, case-insensitive, em `nat_event`/`event`/`type` | Só o print de produção confirma os valores; degradação é segura | y |
 | Create sem par na janela | Consulta filtrada ao nfdump (dia seguinte → hoje) | Alocações de 6 meses inviabilizam reler dias inteiros | y |
-| Expressão de filtro do nfdump | Montada por allowlist de valores tipados + `shlex.quote` | Reabre superfície de injeção; controlada por IP validado + inteiros | y |
-| **Sintaxe de filtro do nfdump** | A confirmar contra o binário real do servidor (NAT event, pblock) | Varia por versão; não conhecida no código | **n — pendente (E6)** |
+| Expressão de filtro do nfdump | Montada por allowlist de valores tipados + `shlex.quote` | Reabre superfície de injeção; controlada por IP validado | y |
+| **Sintaxe de filtro do nfdump** | `(src ip <origem> and src nat ip <nat>)`; bloco casado em Python | **Confirmada no nfdump 1.7.8** (ver nfdump-filtro.md): `pblock` não é filtrável nessa versão | **y — verificado 2026-07-21** |
 
-**Open questions:** a sintaxe exata de filtro do nfdump para NAT/bloco é a única pendência,
-resolvida na etapa E6 contra o servidor real. Enquanto não confirmada, o pushdown é
-desligável por env e a feature degrada para "aberta até <fim da janela>".
+**Open questions:** none — a sintaxe do nfdump foi confirmada contra o servidor real
+(nfdump 1.7.8) e validada end-to-end com dados de produção.
 
 ---
 

@@ -43,25 +43,33 @@ def _service(janela: List[Dict[str, Any]], extras: List[Dict[str, Any]]):
 
 
 class TestConstruirFiltro:
-    def test_monta_expressao_com_valores_tipados(self):
+    def test_monta_expressao_com_ips(self):
+        """Filtra por src ip + src nat ip (sintaxe confirmada no nfdump 1.7.8)."""
         chave = ("172.16.2.1", "172.16.10.17", "177.137.21.38", 4096, 512)
         expr = construir_filtro_nfdump([chave])
-        assert "172.16.10.17" in expr and "177.137.21.38" in expr and "4096" in expr
+        assert "src ip 172.16.10.17" in expr
+        assert "src nat ip 177.137.21.38" in expr
+
+    def test_bloco_nao_entra_na_expressao(self):
+        """O nfdump 1.7.8 nao tem filtro pblock; o bloco e casado em Python."""
+        chave = ("172.16.2.1", "172.16.10.17", "177.137.21.38", 4096, 512)
+        expr = construir_filtro_nfdump([chave])
+        assert "pblock" not in expr and "4096" not in expr
 
     def test_anti_injecao_descarta_chave_com_ip_malicioso(self):
         """NAT-10: valor que nao e IP valido nunca entra na expressao."""
         maliciosa = ("172.16.2.1", "1.2.3.4; rm -rf /", "177.137.21.38", 4096, 512)
         assert construir_filtro_nfdump([maliciosa]) == ""
 
-    def test_anti_injecao_descarta_bloco_nao_inteiro(self):
-        ruim = ("172.16.2.1", "172.16.10.17", "177.137.21.38", "4096; drop", 512)
+    def test_anti_injecao_descarta_nat_malicioso(self):
+        ruim = ("172.16.2.1", "172.16.10.17", "$(reboot)", 4096, 512)
         assert construir_filtro_nfdump([ruim]) == ""
 
     def test_mistura_valida_e_invalida_mantem_so_a_valida(self):
         boa = ("172.16.2.1", "172.16.10.17", "177.137.21.38", 4096, 512)
         ruim = ("172.16.2.1", "nao-ip", "177.137.21.38", 8192, 512)
         expr = construir_filtro_nfdump([boa, ruim])
-        assert "4096" in expr and "8192" not in expr
+        assert "172.16.10.17" in expr and "nao-ip" not in expr
 
 
 class TestResolverPendentes:

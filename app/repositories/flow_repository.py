@@ -14,26 +14,24 @@ def construir_filtro_nfdump(chaves: Sequence[Tuple]) -> str:
     """Monta a expressao de filtro do nfdump por allowlist de valores tipados.
 
     Cada chave e (roteador, origem, ip_nat, pblock_start, pblock_size). Somente
-    IPs validos (ip_address) e inteiro de bloco entram na expressao; qualquer
-    valor fora disso descarta a chave. Nunca ha string crua do usuario aqui —
-    e a garantia contra injecao no shell do servidor de flows.
+    IPs validos (ip_address) entram na expressao; qualquer valor fora disso
+    descarta a chave. Nunca ha string crua do usuario aqui — e a garantia
+    contra injecao no shell do servidor de flows.
 
-    NOTA: os keywords (`src nat ip`, `pblock start`) dependem da versao do
-    nfdump e estao pendentes de confirmacao (ver nfdump-filtro.md).
+    Filtra por `src ip` (origem interna) e `src nat ip` (IP publico traduzido),
+    confirmados no nfdump 1.7.8. O bloco de portas NAO entra na expressao: o
+    nfdump 1.7.8 nao tem filtro `pblock`; o bloco exato e casado depois em
+    Python (_fechar_com_extras, via chave_sessao). Ver nfdump-filtro.md.
     """
     partes: List[str] = []
     for chave in chaves:
-        origem, nat, inicio = chave[1], chave[2], chave[3]
+        origem, nat = chave[1], chave[2]
         try:
             ip_address(origem)
             ip_address(nat)
         except (ValueError, TypeError):
             continue
-        if not isinstance(inicio, int) or isinstance(inicio, bool):
-            continue
-        partes.append(
-            f"(src ip {origem} and src nat ip {nat} and pblock start {inicio})"
-        )
+        partes.append(f"(src ip {origem} and src nat ip {nat})")
     return " or ".join(partes)
 
 
