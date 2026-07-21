@@ -1763,3 +1763,32 @@ main {
 .hero_index__cta--v3:hover .hero_index__cta-arrow { transform: translateX(4px); }
 .hero_index__cta--v3:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7), 0 0 0 6px rgba(255, 102, 0, 0.55); }
 @media (prefers-reduced-motion: reduce) { .hero_index__cta--v3, .hero_index__cta--v3 .hero_index__cta-arrow { transition: none; } }
+
+/* ── Botão secundário (ex.: Exportar CSV) — sóbrio, não compete com o primário ── */
+.secondary_button {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+.secondary_button:hover:not(:disabled) {
+  border-color: var(--color-primary-light);
+  background: #f0f4fa;
+}
+.secondary_button:focus-visible {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 4px rgba(0, 44, 102, 0.12);
+}
+.secondary_button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -32,6 +32,8 @@ function initPlogPage() {
     event.preventDefault();
     buscarLogs(1);
   });
+
+  document.getElementById("btnExport")?.addEventListener("click", exportarCSV);
 }
 
 async function loadAdminNav() {
@@ -303,8 +305,9 @@ function getSelectedStatus() {
   );
 }
 
-function buildUrl(page = 1) {
-  const pageSize = document.getElementById("pageSize")?.value || "100";
+function buildUrl(page = 1, pageSizeOverride) {
+  const pageSize =
+    pageSizeOverride || document.getElementById("pageSize")?.value || "100";
   const ip = document.getElementById("ip")?.value.trim() || "";
   const porta = document.getElementById("porta")?.value.trim() || "";
   const day = document.getElementById("day")?.value || "";
@@ -338,6 +341,128 @@ function buildUrl(page = 1) {
   if (horaAte) params.set("hora_ate", horaAte);
 
   return `${API_PREFIX}/flows?${params.toString()}`;
+}
+
+// Descreve os filtros ativos para carimbar o arquivo exportado (auditoria).
+function descreverFiltros() {
+  const g = (id) => document.getElementById(id)?.value?.trim() || "";
+  const partes = [`data=${g("day")}`];
+  if (g("dayEnd")) partes.push(`data_fim=${g("dayEnd")}`);
+  if (g("ip")) partes.push(`ip=${g("ip")}`);
+  if (g("porta")) partes.push(`porta=${g("porta")}`);
+  const protos = getSelectedProtocols();
+  if (protos.length) partes.push(`protocolo=${protos.join("+")}`);
+  const estados = getSelectedStatus();
+  if (estados.length) partes.push(`estado=${estados.join("+")}`);
+  if (g("horaDe")) partes.push(`hora_de=${g("horaDe")}`);
+  if (g("horaAte")) partes.push(`hora_ate=${g("horaAte")}`);
+  return partes.join("; ");
+}
+
+function csvCell(valor) {
+  const s = valor === null || valor === undefined ? "" : String(valor);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function montarCsv(registros, meta) {
+  const linhas = [
+    "# PLog — Exportacao de sessoes NAT",
+    `# Gerado em: ${new Date().toISOString()}`,
+    `# Filtros: ${descreverFiltros()}`,
+    `# Total exportado: ${registros.length}${
+      meta.truncado ? ` (TRUNCADO no limite de ${meta.paginasLidas} paginas)` : ""
+    }`,
+    "",
+  ];
+  const cols = [
+    "Status", "Abertura", "Fechamento", "Duracao",
+    "Protocolo", "Origem", "NAT", "Bloco Portas", "Roteador",
+  ];
+  linhas.push(cols.map(csvCell).join(","));
+  for (const r of registros) {
+    linhas.push(
+      [
+        r.status, r.abertura || r.data, r.fechamento, r.duracao,
+        r.protocolo, r.origem, r.nat, r.bloco_portas, r.roteador,
+      ].map(csvCell).join(",")
+    );
+  }
+  return linhas.join("\r\n");
+}
+
+function baixarCsv(csv) {
+  // BOM para o Excel reconhecer UTF-8.
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `plog-flows-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Exporta TODAS as sessoes dos filtros atuais (nao so a pagina visivel),
+// paginando a API, com carimbo de filtros + timestamp para uso auditavel.
+async function exportarCSV() {
+  if (!requireAuth()) return;
+
+  const btn = document.getElementById("btnExport");
+  const summaryEl = document.getElementById("resultSummary");
+
+  try {
+    buildUrl(1, 1000); // valida os filtros (lanca se data ausente/invalida)
+  } catch (err) {
+    setStatus(err.message, "error");
+    if (summaryEl) summaryEl.textContent = err.message;
+    return;
+  }
+
+  const rotuloOriginal = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Exportando…";
+  }
+  setStatus("Exportando…", "loading");
+
+  const MAX_PAGINAS = 100; // teto de seguranca (~100k linhas)
+  const todas = [];
+  let pagina = 1;
+  let totalPaginas = 1;
+
+  try {
+    do {
+      const resp = await fetchWithAuth(buildUrl(pagina, 1000));
+      const payload = await parseJsonResponse(resp);
+      if (!resp.ok) {
+        throw new Error(formatError(payload, resp.status));
+      }
+      const regs = Array.isArray(payload?.registros) ? payload.registros : [];
+      todas.push(...regs);
+      totalPaginas = payload?.total_paginas ?? 1;
+      pagina += 1;
+    } while (pagina <= totalPaginas && pagina <= MAX_PAGINAS);
+
+    const truncado = totalPaginas > MAX_PAGINAS;
+    baixarCsv(montarCsv(todas, { truncado, paginasLidas: MAX_PAGINAS }));
+    setStatus(`${todas.length} sessões exportadas`, "success");
+    if (summaryEl) {
+      summaryEl.textContent = `Exportadas ${todas.length} sessões${
+        truncado ? " (truncado no limite de segurança)" : ""
+      }.`;
+    }
+  } catch (err) {
+    setStatus("Erro ao exportar.", "error");
+    if (summaryEl) summaryEl.textContent = `Falha na exportação: ${err.message}`;
+    console.error("Erro na exportação:", err);
+  } finally {
+    if (btn) {
+      btn.textContent = rotuloOriginal;
+      btn.disabled = todas.length === 0;
+    }
+  }
 }
 
 function clearTable() {
@@ -456,6 +581,8 @@ async function buscarLogs(page = 1) {
   setStatus("Carregando...", "loading");
   if (summaryEl) summaryEl.textContent = "Buscando flows no servidor...";
   if (btn) btn.disabled = true;
+  const btnExport = document.getElementById("btnExport");
+  if (btnExport) btnExport.disabled = true;
 
   let url;
   try {
@@ -497,6 +624,10 @@ async function buscarLogs(page = 1) {
     const total = payload?.total ?? registros.length;
     const totalPaginas = payload?.total_paginas ?? 1;
     renderPagination(page, totalPaginas);
+
+    // Exportar só faz sentido quando há resultados.
+    const btnExport = document.getElementById("btnExport");
+    if (btnExport) btnExport.disabled = registros.length === 0;
 
     if (registros.length === 0) {
       renderEmptyRow("Nenhum flow encontrado para os filtros informados.");
