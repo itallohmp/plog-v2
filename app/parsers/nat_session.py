@@ -102,6 +102,7 @@ class Sessao:
     parcial: bool = False
     eventos: int = 1
     ordem: int = 0  # indice original do evento ancora, para ordenar a saida
+    verificado_ate: Optional[str] = None  # ISO; so faz sentido quando aberta
     evento_create: Optional[Dict[str, Any]] = None
     evento_delete: Optional[Dict[str, Any]] = None
 

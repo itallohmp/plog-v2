@@ -1,7 +1,18 @@
+from collections import defaultdict
+from datetime import date, datetime, timedelta
 from math import ceil
 from typing import Any, Dict, List
 
-from app.parsers.nat_session import Sessao, correlacionar, formatar_duracao
+from app.core import config
+from app.parsers.nat_session import (
+    CorrelacaoResultado,
+    Sessao,
+    chave_sessao,
+    classificar_evento,
+    correlacionar,
+    formatar_duracao,
+    timestamp_evento,
+)
 from app.parsers.pcap_parser import normalize_pcap_event, pcap_event_matches
 from app.repositories.flow_repository import FlowNotFoundError, FlowRepository
 from app.schemas.flow import FlowQuery, FlowResponse, FlowSession
@@ -49,6 +60,7 @@ def _montar_sessao(sessao: Sessao) -> FlowSession:
         fechamento=fechamento,
         duracao=formatar_duracao(sessao.duracao_segundos),
         duracao_segundos=sessao.duracao_segundos,
+        verificado_ate=sessao.verificado_ate,
         parcial=sessao.parcial,
         eventos=sessao.eventos,
     )
@@ -99,6 +111,7 @@ class FlowService:
         # Correlaciona ANTES de paginar: create e delete de uma mesma sessao
         # precisam estar juntos, o que nao aconteceria se fatiassemos primeiro.
         resultado = correlacionar(filtrados)
+        self._resolver_pendentes(resultado, dias[-1])
         sessoes = resultado.sessoes
 
         total = len(sessoes)
@@ -119,3 +132,69 @@ class FlowService:
             total_paginas=total_paginas,
             registros=registros,
         )
+
+    def _resolver_pendentes(
+        self, resultado: CorrelacaoResultado, ultimo_dia: date
+    ) -> None:
+        """Verifica, alem da janela, se as sessoes abertas ja fecharam.
+
+        Consulta o nfdump filtrado pelas chaves pendentes no range (dia seguinte
+        -> hoje). As que casarem um delete viram fechadas; as demais ficam
+        abertas com verificado_ate = hoje. Desligavel por PLOG_NAT_LOOKAHEAD.
+        """
+        pendentes = resultado.pendentes
+        if not pendentes or not config.NAT_LOOKAHEAD_ATIVO:
+            return
+
+        hoje = date.today()
+        inicio = ultimo_dia + timedelta(days=1)
+
+        if inicio <= hoje:
+            chaves: List = []
+            vistas = set()
+            for sessao in pendentes:
+                if sessao.chave not in vistas:
+                    vistas.add(sessao.chave)
+                    chaves.append(sessao.chave)
+                if len(chaves) >= config.NAT_LOOKAHEAD_MAX_CHAVES:
+                    break
+            try:
+                extras = self.repository.fetch_flows_por_chave(chaves, inicio, hoje)
+            except FlowNotFoundError:
+                extras = []
+            self._fechar_com_extras(pendentes, extras)
+
+        for sessao in pendentes:
+            if sessao.status == "aberta":
+                sessao.verificado_ate = hoje.isoformat()
+
+    @staticmethod
+    def _fechar_com_extras(
+        pendentes: List[Sessao], extras: List[Dict[str, Any]]
+    ) -> None:
+        por_chave: Dict[Any, List[Sessao]] = defaultdict(list)
+        for sessao in pendentes:
+            por_chave[sessao.chave].append(sessao)
+
+        deletes = []
+        for evento in extras:
+            if classificar_evento(evento) != "delete":
+                continue
+            chave = chave_sessao(evento)
+            ts = timestamp_evento(evento)
+            if ts is not None and chave in por_chave:
+                deletes.append((ts, chave, evento))
+
+        # Processa em ordem cronologica para casar cada delete com a sessao certa.
+        deletes.sort(key=lambda d: d[0])
+        for ts, chave, evento in deletes:
+            candidatas = [
+                s
+                for s in por_chave[chave]
+                if s.status == "aberta" and (s.abertura is None or s.abertura <= ts)
+            ]
+            if not candidatas:
+                continue
+            # LIFO, coerente com correlacionar: fecha a de abertura mais recente.
+            alvo = max(candidatas, key=lambda s: s.abertura or datetime.min)
+            alvo.fechar(ts, evento)
