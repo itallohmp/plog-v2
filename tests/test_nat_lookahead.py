@@ -3,14 +3,18 @@
 Derivados de .specs/features/sessoes-nat/spec.md (NAT-07..10).
 """
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
 
 from app.core import config
-from app.repositories.flow_repository import FlowRepository, construir_filtro_nfdump
+from app.repositories.flow_repository import (
+    FlowQueryError,
+    FlowRepository,
+    construir_filtro_nfdump,
+)
 from app.schemas.flow import FlowQuery
 from app.services.flow_service import FlowService
 
@@ -88,7 +92,8 @@ class TestResolverPendentes:
         repo.fetch_flows_por_chave.assert_called_once()
 
     def test_sem_delete_fica_aberta_com_verificado_ate(self):
-        """NAT-07: pendente sem delete no range -> aberta, verificado ate hoje."""
+        """NAT-07: pendente sem delete -> aberta, verificado ate o ultimo dia
+        efetivamente checado (janela + teto de dias do lookahead)."""
         svc, repo = _service(
             janela=[_ev("2020-01-01T10:00:00", "create")],
             extras=[],
@@ -96,8 +101,20 @@ class TestResolverPendentes:
 
         resp = svc.buscar_flows(FlowQuery(data=DIA))
 
+        esperado = (DIA + timedelta(days=config.NAT_LOOKAHEAD_MAX_DIAS)).isoformat()
         assert resp.registros[0].status == "aberta"
-        assert resp.registros[0].verificado_ate == date.today().isoformat()
+        assert resp.registros[0].verificado_ate == esperado
+
+    def test_falha_no_lookahead_nao_derruba_query(self):
+        """O lookahead degrada: erro no nfdump extra deixa a sessao aberta,
+        mas a consulta principal ainda responde (nunca 502)."""
+        svc, repo = _service(janela=[_ev("2020-01-01T10:00:00", "create")], extras=[])
+        repo.fetch_flows_por_chave.side_effect = FlowQueryError("nfdump falhou")
+
+        resp = svc.buscar_flows(FlowQuery(data=DIA))
+
+        assert resp.total == 1
+        assert resp.registros[0].status == "aberta"
 
     def test_sem_pendentes_nao_consulta(self):
         """NAT-08: janela ja com par completo -> nenhuma consulta extra."""

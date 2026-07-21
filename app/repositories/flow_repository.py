@@ -1,7 +1,7 @@
 import json
 import shlex
 import subprocess
-from datetime import date
+from datetime import date, timedelta
 from ipaddress import ip_address
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -132,12 +132,14 @@ class FlowRepository:
     def fetch_flows_por_chave(
         self, chaves: Sequence[Tuple], inicio: date, fim: date
     ) -> List[Dict[str, Any]]:
-        """Consulta o nfdump filtrado pelas chaves de sessao, no range [inicio, fim].
+        """Consulta o nfdump filtrado pelas chaves de sessao, dia a dia em [inicio, fim].
 
-        Usado para descobrir se sessoes abertas na janela fecharam depois dela,
-        sem reler dias inteiros. A expressao vem de construir_filtro_nfdump
-        (allowlist). Em modo local, delega ao acesso local (que ignora o range;
-        o service filtra em memoria).
+        Usado para descobrir se sessoes abertas na janela fecharam depois dela.
+        O nfdump 1.7.8 nao aceita range sobre diretorios de dia (`-R d1:d2` ->
+        "Not a file"), mas `-R <dia>` le a pasta do dia recursivamente. Como o
+        filtro (allowlist) e estreito, cada leitura diaria e barata. Dias sem
+        dados (dir inexistente) sao ignorados. Em modo local, delega ao acesso
+        local (o service filtra em memoria).
         """
         expr = construir_filtro_nfdump(chaves)
         if not expr:
@@ -147,18 +149,23 @@ class FlowRepository:
             return self._fetch_local_flows(config.FLOW_LOCAL_PATH)
 
         base = config.FLOW_REMOTE_DIR
-        dir_inicio = f"{base}/{inicio.strftime(config.FLOW_DAY_DIR_FORMAT)}"
-        dir_fim = f"{base}/{fim.strftime(config.FLOW_DAY_DIR_FORMAT)}"
-        range_arg = f"{dir_inicio}:{dir_fim}"
-
-        comando = (
-            f"{shlex.quote(config.NFDUMP_BIN)} -R {shlex.quote(range_arg)} "
-            f"{shlex.quote(expr)} -o json"
-        )
-
+        eventos: List[Dict[str, Any]] = []
         client = self._connect()
         try:
-            return self._exec_nfdump(client, comando, contexto=range_arg)
+            dia = inicio
+            while dia <= fim:
+                day_dir = f"{base}/{dia.strftime(config.FLOW_DAY_DIR_FORMAT)}"
+                comando = (
+                    f"{shlex.quote(config.NFDUMP_BIN)} -R {shlex.quote(day_dir)} "
+                    f"{shlex.quote(expr)} -o json"
+                )
+                try:
+                    eventos.extend(self._exec_nfdump(client, comando, contexto=day_dir))
+                except FlowQueryError:
+                    # Dia sem dados / diretorio inexistente: ignora e segue.
+                    pass
+                dia += timedelta(days=1)
+            return eventos
         finally:
             client.close()
 
@@ -242,6 +249,11 @@ class FlowRepository:
     def _parse_nfdump_json(payload: str) -> List[Dict[str, Any]]:
         conteudo = payload.strip()
         if not conteudo:
+            return []
+
+        # nfdump imprime este texto (dentro de um array vazio) quando o filtro
+        # nao casa nada. Nao e JSON valido linha a linha; tratamos como vazio.
+        if "No matching flows" in conteudo:
             return []
 
         try:

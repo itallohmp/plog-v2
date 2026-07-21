@@ -37,6 +37,17 @@ continua precisa. A expressão real gerada foi validada no servidor:
 Não usamos filtro por `nat event` na expressão (a classe é decidida em Python), o que também
 evita a divergência do keyword `create`/`ADD`.
 
+## Range de dias (corrigido após 502 em produção)
+
+`nfdump -R <dia1>:<dia2>` **NÃO funciona** aqui: os diretórios de dia contêm subpastas de
+hora, e o range do `-R` espera arquivos ("Not a file: ..."). Mas `-R <dia>` sozinho lê a
+pasta do dia **recursivamente**. Portanto o lookahead itera **um dia por vez** com
+`-R <dia> '<filtro>'`, capado por `PLOG_NAT_LOOKAHEAD_MAX_DIAS` (padrão 3).
+
+Zero matches: o nfdump imprime `[\nNo matching flows\n\n]` (não-JSON), tratado como lista
+vazia no parser. Falha do lookahead nunca propaga: degrada para sessão "aberta até
+<último dia checado>", jamais 502 na consulta principal.
+
 ## Validação end-to-end
 
 `FlowService.buscar_flows` sobre o assinante real `100.64.18.249` (2026-07-21, hora 00)

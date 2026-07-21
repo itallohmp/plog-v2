@@ -47,6 +47,11 @@ FLOW_LOCAL_PATH = os.getenv("PLOG_FLOW_LOCAL_PATH") or None
 NAT_LOOKAHEAD_ATIVO = os.getenv("PLOG_NAT_LOOKAHEAD", "1") not in ("0", "false", "False")
 # Teto de chaves pendentes por consulta, para nao gerar expressao gigante.
 NAT_LOOKAHEAD_MAX_CHAVES = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_CHAVES", "200"))
+# Teto de dias verificados adiante. O nfdump 1.7.8 nao aceita range sobre
+# diretorios de dia (`-R d1:d2`), entao o lookahead le um dia por vez com
+# `-R <dia>` (filtrado, barato). O teto limita o custo; sessoes ainda abertas
+# apos ele ficam com verificado_ate = ultimo dia checado.
+NAT_LOOKAHEAD_MAX_DIAS = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_DIAS", "3"))
 
 NFDUMP_LOCAL_BIN = os.getenv("PLOG_NFDUMP_LOCAL_BIN", "nfdump")
 FLOW_NFCAPD_PREFIX = os.getenv("PLOG_FLOW_NFCAPD_PREFIX", "nfcapd")

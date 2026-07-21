@@ -14,7 +14,11 @@ from app.parsers.nat_session import (
     timestamp_evento,
 )
 from app.parsers.pcap_parser import normalize_pcap_event, pcap_event_matches
-from app.repositories.flow_repository import FlowNotFoundError, FlowRepository
+from app.repositories.flow_repository import (
+    FlowNotFoundError,
+    FlowQueryError,
+    FlowRepository,
+)
 from app.schemas.flow import FlowQuery, FlowResponse, FlowSession
 
 _PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
@@ -148,8 +152,13 @@ class FlowService:
 
         hoje = date.today()
         inicio = ultimo_dia + timedelta(days=1)
+        # A janela consultada ja foi verificada ate o seu ultimo dia.
+        verificado_ate = ultimo_dia
 
         if inicio <= hoje:
+            max_dias = max(1, config.NAT_LOOKAHEAD_MAX_DIAS)
+            fim = min(hoje, inicio + timedelta(days=max_dias - 1))
+
             chaves: List = []
             vistas = set()
             for sessao in pendentes:
@@ -159,14 +168,18 @@ class FlowService:
                 if len(chaves) >= config.NAT_LOOKAHEAD_MAX_CHAVES:
                     break
             try:
-                extras = self.repository.fetch_flows_por_chave(chaves, inicio, hoje)
-            except FlowNotFoundError:
+                extras = self.repository.fetch_flows_por_chave(chaves, inicio, fim)
+            except (FlowNotFoundError, FlowQueryError):
+                # Falha no lookahead nunca derruba a consulta principal: as
+                # sessoes apenas permanecem abertas ate o dia ja verificado.
                 extras = []
             self._fechar_com_extras(pendentes, extras)
+            verificado_ate = fim
 
+        rotulo = verificado_ate.isoformat()
         for sessao in pendentes:
             if sessao.status == "aberta":
-                sessao.verificado_ate = hoje.isoformat()
+                sessao.verificado_ate = rotulo
 
     @staticmethod
     def _fechar_com_extras(
