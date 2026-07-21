@@ -2,11 +2,37 @@ import json
 import shlex
 import subprocess
 from datetime import date
+from ipaddress import ip_address
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import paramiko
 from app.core import config
+
+
+def construir_filtro_nfdump(chaves: Sequence[Tuple]) -> str:
+    """Monta a expressao de filtro do nfdump por allowlist de valores tipados.
+
+    Cada chave e (roteador, origem, ip_nat, pblock_start, pblock_size). Somente
+    IPs validos (ip_address) entram na expressao; qualquer valor fora disso
+    descarta a chave. Nunca ha string crua do usuario aqui — e a garantia
+    contra injecao no shell do servidor de flows.
+
+    Filtra por `src ip` (origem interna) e `src nat ip` (IP publico traduzido),
+    confirmados no nfdump 1.7.8. O bloco de portas NAO entra na expressao: o
+    nfdump 1.7.8 nao tem filtro `pblock`; o bloco exato e casado depois em
+    Python (_fechar_com_extras, via chave_sessao). Ver nfdump-filtro.md.
+    """
+    partes: List[str] = []
+    for chave in chaves:
+        origem, nat = chave[1], chave[2]
+        try:
+            ip_address(origem)
+            ip_address(nat)
+        except (ValueError, TypeError):
+            continue
+        partes.append(f"(src ip {origem} and src nat ip {nat})")
+    return " or ".join(partes)
 
 
 class FlowNotFoundError(RuntimeError):
@@ -103,13 +129,50 @@ class FlowRepository:
 
         return pastas
 
+    def fetch_flows_por_chave(
+        self, chaves: Sequence[Tuple], inicio: date, fim: date
+    ) -> List[Dict[str, Any]]:
+        """Consulta o nfdump filtrado pelas chaves de sessao, no range [inicio, fim].
+
+        Usado para descobrir se sessoes abertas na janela fecharam depois dela,
+        sem reler dias inteiros. A expressao vem de construir_filtro_nfdump
+        (allowlist). Em modo local, delega ao acesso local (que ignora o range;
+        o service filtra em memoria).
+        """
+        expr = construir_filtro_nfdump(chaves)
+        if not expr:
+            return []
+
+        if config.FLOW_LOCAL_PATH:
+            return self._fetch_local_flows(config.FLOW_LOCAL_PATH)
+
+        base = config.FLOW_REMOTE_DIR
+        dir_inicio = f"{base}/{inicio.strftime(config.FLOW_DAY_DIR_FORMAT)}"
+        dir_fim = f"{base}/{fim.strftime(config.FLOW_DAY_DIR_FORMAT)}"
+        range_arg = f"{dir_inicio}:{dir_fim}"
+
+        comando = (
+            f"{shlex.quote(config.NFDUMP_BIN)} -R {shlex.quote(range_arg)} "
+            f"{shlex.quote(expr)} -o json"
+        )
+
+        client = self._connect()
+        try:
+            return self._exec_nfdump(client, comando, contexto=range_arg)
+        finally:
+            client.close()
+
     def _run_nfdump(
         self, client: paramiko.SSHClient, directory: str
     ) -> List[Dict[str, Any]]:
         comando = (
             f"{shlex.quote(config.NFDUMP_BIN)} " f"-R {shlex.quote(directory)} -o json"
         )
+        return self._exec_nfdump(client, comando, contexto=directory)
 
+    def _exec_nfdump(
+        self, client: paramiko.SSHClient, comando: str, contexto: str
+    ) -> List[Dict[str, Any]]:
         _, stdout, stderr = client.exec_command(comando, timeout=config.NFDUMP_TIMEOUT)
 
         saida = stdout.read().decode("utf-8", errors="ignore")
@@ -117,7 +180,7 @@ class FlowRepository:
         status = stdout.channel.recv_exit_status()
 
         if status != 0:
-            raise FlowQueryError(f"nfdump falhou em {directory}: {erro.strip()}")
+            raise FlowQueryError(f"nfdump falhou em {contexto}: {erro.strip()}")
 
         return self._parse_nfdump_json(saida)
 
