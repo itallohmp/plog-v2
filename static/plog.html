@@ -72,33 +72,6 @@
           <input type="number" id="porta" min="0" max="65535" placeholder="Ex: 39936">
         </div>
 
-        <div class="field field--protocolo" role="group" aria-labelledby="protocoloLabel">
-          <span class="field_label" id="protocoloLabel">Protocolo</span>
-          <div class="checkbox_row">
-            <label class="checkbox_chip">
-              <input type="checkbox" name="protocolo" value="tcp"><span>TCP</span>
-            </label>
-            <label class="checkbox_chip">
-              <input type="checkbox" name="protocolo" value="udp"><span>UDP</span>
-            </label>
-            <label class="checkbox_chip">
-              <input type="checkbox" name="protocolo" value="icmp"><span>ICMP</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="field field--protocolo" role="group" aria-labelledby="statusLabel">
-          <span class="field_label" id="statusLabel">Estado</span>
-          <div class="checkbox_row">
-            <label class="checkbox_chip">
-              <input type="checkbox" name="status" value="aberta"><span>Aberta</span>
-            </label>
-            <label class="checkbox_chip">
-              <input type="checkbox" name="status" value="fechada"><span>Fechada</span>
-            </label>
-          </div>
-        </div>
-
         <div class="field field--sm">
           <label for="pageSize">Linhas</label>
           <select id="pageSize">
@@ -107,6 +80,43 @@
             <option value="200">200</option>
           </select>
         </div>
+
+        <details class="more_filters" id="moreFilters">
+          <summary class="more_filters__summary">
+            <span class="more_filters__title">Mais filtros</span>
+            <span class="more_filters__count" id="moreFiltersCount" hidden></span>
+          </summary>
+          <div class="more_filters__body">
+            <div class="field field--protocolo" role="group" aria-labelledby="protocoloLabel">
+              <span class="field_label" id="protocoloLabel">Protocolo</span>
+              <div class="checkbox_row">
+                <label class="checkbox_chip">
+                  <input type="checkbox" name="protocolo" value="tcp"><span>TCP</span>
+                </label>
+                <label class="checkbox_chip">
+                  <input type="checkbox" name="protocolo" value="udp"><span>UDP</span>
+                </label>
+                <label class="checkbox_chip">
+                  <input type="checkbox" name="protocolo" value="icmp"><span>ICMP</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field field--protocolo" role="group" aria-labelledby="statusLabel">
+              <span class="field_label" id="statusLabel">Estado</span>
+              <div class="checkbox_row">
+                <label class="checkbox_chip">
+                  <input type="checkbox" name="status" value="aberta"><span>Aberta</span>
+                </label>
+                <label class="checkbox_chip">
+                  <input type="checkbox" name="status" value="fechada"><span>Fechada</span>
+                </label>
+              </div>
+            </div>
+
+            <p class="more_filters__hint">Nenhum marcado = todos os protocolos e estados.</p>
+          </div>
+        </details>
 
         <button id="btnBuscar" class="primary_button" type="submit">Buscar Logs</button>
       </form>

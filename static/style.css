@@ -1782,3 +1782,67 @@ main {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Seção "Mais filtros" (Protocolo + Estado, recolhível) ── */
+.more_filters {
+  flex-basis: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.more_filters__summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  user-select: none;
+}
+.more_filters__summary::-webkit-details-marker { display: none; }
+.more_filters__summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--color-primary-light);
+  border-bottom: 2px solid var(--color-primary-light);
+  transform: rotate(-45deg);
+  transition: transform 160ms ease;
+}
+.more_filters[open] .more_filters__summary::before {
+  transform: rotate(45deg);
+}
+.more_filters__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 44, 102, 0.12);
+  border-radius: var(--radius-md);
+}
+.more_filters__count {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.more_filters__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 28px;
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--color-border);
+}
+.more_filters__hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}

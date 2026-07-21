@@ -34,6 +34,27 @@ function initPlogPage() {
   });
 
   document.getElementById("btnExport")?.addEventListener("click", exportarCSV);
+
+  // Selo de "Mais filtros": mostra quantos protocolos/estados estão marcados,
+  // para que filtros ativos sejam visíveis mesmo com a seção recolhida.
+  document
+    .querySelectorAll('input[name="protocolo"], input[name="status"]')
+    .forEach((cb) => cb.addEventListener("change", atualizarSeloMaisFiltros));
+  atualizarSeloMaisFiltros();
+}
+
+function atualizarSeloMaisFiltros() {
+  const badge = document.getElementById("moreFiltersCount");
+  if (!badge) return;
+  const n = document.querySelectorAll(
+    'input[name="protocolo"]:checked, input[name="status"]:checked'
+  ).length;
+  if (n > 0) {
+    badge.textContent = `${n} ativo${n > 1 ? "s" : ""}`;
+    badge.hidden = false;
+  } else {
+    badge.hidden = true;
+  }
 }
 
 async function loadAdminNav() {
