@@ -1295,6 +1295,16 @@ body {
   background: #9ca3af;
 }
 
+.dash_proto {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  letter-spacing: 0.01em;
+}
+
 @media (max-width: 1000px) {
   .plog_top {
     grid-template-columns: 1fr;

@@ -127,7 +127,7 @@
       <div class="section_header">
         <div>
           <h2 id="dashTitle">Panorama</h2>
-          <p id="dashHint">Resumo das sessões carregadas na visão atual.</p>
+          <p id="dashHint">Resumo de todas as sessões que casam o filtro.</p>
         </div>
       </div>
 
@@ -144,11 +144,11 @@
           </div>
           <div class="dash_kpi">
             <span class="dash_kpi__value" id="kpiAbertas">0</span>
-            <span class="dash_kpi__label">Abertas na visão</span>
+            <span class="dash_kpi__label">Abertas</span>
           </div>
           <div class="dash_kpi">
             <span class="dash_kpi__value" id="kpiFechadas">0</span>
-            <span class="dash_kpi__label">Fechadas na visão</span>
+            <span class="dash_kpi__label">Fechadas</span>
           </div>
           <div class="dash_kpi">
             <span class="dash_kpi__value" id="kpiDuracao">—</span>
@@ -159,9 +159,9 @@
         <div class="dash_dist">
           <div class="dash_dist__head">
             <span>Distribuição por estado</span>
-            <span class="dash_dist__scope" id="dashScope">visão atual</span>
+            <span class="dash_dist__scope" id="dashScope">todo o filtro</span>
           </div>
-          <div class="dash_dist__bar" id="dashBar" role="img" aria-label="Distribuição por estado das sessões carregadas">
+          <div class="dash_dist__bar" id="dashBar" role="img" aria-label="Distribuição por estado das sessões do filtro">
             <span class="dash_dist__seg dash_dist__seg--aberta" id="segAberta"></span>
             <span class="dash_dist__seg dash_dist__seg--fechada" id="segFechada"></span>
             <span class="dash_dist__seg dash_dist__seg--indefinida" id="segIndef"></span>
@@ -171,6 +171,7 @@
             <li><span class="dash_dot dash_dot--fechada" aria-hidden="true"></span>Fechada <b id="legFechada">0</b></li>
             <li><span class="dash_dot dash_dot--indefinida" aria-hidden="true"></span>Indefinida <b id="legIndef">0</b></li>
           </ul>
+          <p class="dash_proto" id="dashProto" hidden></p>
         </div>
       </div>
     </section>

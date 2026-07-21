@@ -661,7 +661,7 @@ async function buscarLogs(page = 1) {
       if (summaryEl) {
         summaryEl.textContent = `Mostrando ${registros.length} de ${total} resultado(s) — página ${page} de ${totalPaginas}.`;
       }
-      atualizarPanorama(registros, total);
+      atualizarPanorama(payload?.resumo);
     }
   } catch (err) {
     if (err.name === "AbortError") {
@@ -700,18 +700,6 @@ function renderEmptyRow(message) {
   `;
 }
 
-function formatarSegundos(seg) {
-  if (seg === null || seg === undefined || Number.isNaN(seg)) return "—";
-  seg = Math.round(seg);
-  if (seg < 60) return `${seg}s`;
-  const m = Math.floor(seg / 60);
-  const s = seg % 60;
-  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
-  const h = Math.floor(m / 60);
-  const mr = m % 60;
-  return mr ? `${h}h ${mr}m` : `${h}h`;
-}
-
 // Volta o panorama ao estado vazio (sem busca ou sem resultados).
 function resetPanorama() {
   const empty = document.getElementById("dashEmpty");
@@ -720,35 +708,23 @@ function resetPanorama() {
   if (body) body.hidden = true;
 }
 
-// Resume as sessões carregadas: total no filtro, quebra aberta/fechada da
-// visão atual e duração média. Aberta/fechada refletem a página exibida
-// (o rótulo de escopo deixa isso explícito); o total vem do filtro inteiro.
-function atualizarPanorama(registros, total) {
+// Preenche o painel a partir do resumo agregado que vem na resposta de /flows.
+// O resumo cobre TODAS as sessões do filtro (não apenas a página exibida):
+// total, quebra aberta/fechada/indefinida, duração média e protocolos.
+function atualizarPanorama(resumo) {
   const empty = document.getElementById("dashEmpty");
   const body = document.getElementById("dashBody");
   if (!empty || !body) return;
 
-  const carregadas = registros.length;
-  if (carregadas === 0) {
+  if (!resumo || !resumo.total) {
     resetPanorama();
     return;
   }
 
-  let abertas = 0;
-  let fechadas = 0;
-  let indefinidas = 0;
-  let somaSeg = 0;
-  let comDuracao = 0;
-  for (const r of registros) {
-    const st = r.status || "indefinida";
-    if (st === "aberta") abertas++;
-    else if (st === "fechada") fechadas++;
-    else indefinidas++;
-    if (typeof r.duracao_segundos === "number" && !Number.isNaN(r.duracao_segundos)) {
-      somaSeg += r.duracao_segundos;
-      comDuracao++;
-    }
-  }
+  const total = resumo.total;
+  const abertas = resumo.abertas || 0;
+  const fechadas = resumo.fechadas || 0;
+  const indefinidas = resumo.indefinidas || 0;
 
   const setText = (id, valor) => {
     const el = document.getElementById(id);
@@ -757,12 +733,12 @@ function atualizarPanorama(registros, total) {
   setText("kpiTotal", total);
   setText("kpiAbertas", abertas);
   setText("kpiFechadas", fechadas);
-  setText("kpiDuracao", comDuracao ? formatarSegundos(somaSeg / comDuracao) : "—");
+  setText("kpiDuracao", resumo.duracao_media || "—");
   setText("legAberta", abertas);
   setText("legFechada", fechadas);
   setText("legIndef", indefinidas);
 
-  const basis = (n) => `${(n / carregadas) * 100}%`;
+  const basis = (n) => `${(n / total) * 100}%`;
   const setSeg = (id, n) => {
     const el = document.getElementById(id);
     if (el) el.style.flexBasis = basis(n);
@@ -771,11 +747,20 @@ function atualizarPanorama(registros, total) {
   setSeg("segFechada", fechadas);
   setSeg("segIndef", indefinidas);
 
-  const scope = document.getElementById("dashScope");
-  if (scope) {
-    scope.textContent = carregadas < total
-      ? `${carregadas} de ${total} sessões`
-      : "visão atual";
+  // Quebra por protocolo: TCP/UDP/ICMP primeiro, demais em seguida; só os > 0.
+  const proto = resumo.por_protocolo || {};
+  const protoEl = document.getElementById("dashProto");
+  if (protoEl) {
+    const ordem = ["TCP", "UDP", "ICMP"];
+    const partes = [];
+    for (const nome of ordem) {
+      if (proto[nome]) partes.push(`${nome} ${proto[nome]}`);
+    }
+    for (const nome of Object.keys(proto)) {
+      if (!ordem.includes(nome) && proto[nome]) partes.push(`${nome} ${proto[nome]}`);
+    }
+    protoEl.textContent = partes.join("  ·  ");
+    protoEl.hidden = partes.length === 0;
   }
 
   empty.hidden = true;

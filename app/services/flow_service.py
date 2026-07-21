@@ -19,9 +19,15 @@ from app.repositories.flow_repository import (
     FlowQueryError,
     FlowRepository,
 )
-from app.schemas.flow import FlowQuery, FlowResponse, FlowSession
+from app.schemas.flow import FlowQuery, FlowResponse, FlowResumo, FlowSession
 
 _PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
+
+
+def _protocolo_display(sessao: Sessao) -> str:
+    """Protocolo exibido da sessao, mesma regra usada na tabela."""
+    base = normalize_pcap_event(sessao.ancora)["protocolo"]
+    return _protocolo_da_sessao(sessao, base)
 
 
 def _protocolo_da_sessao(sessao: Sessao, base_protocolo: str) -> str:
@@ -75,6 +81,36 @@ class FlowService:
         self.repository = repository
 
     def buscar_flows(self, query: FlowQuery) -> FlowResponse:
+        sessoes = self._coletar_sessoes(query)
+
+        total = len(sessoes)
+        total_paginas = max(1, ceil(total / query.tamanho_pagina)) if total else 1
+
+        inicio = (query.pagina - 1) * query.tamanho_pagina
+        fim = inicio + query.tamanho_pagina
+        registros = [_montar_sessao(s) for s in sessoes[inicio:fim]]
+
+        return FlowResponse(
+            data=self._data_label(query),
+            total=total,
+            pagina=query.pagina,
+            total_paginas=total_paginas,
+            registros=registros,
+            # Resumo sobre TODAS as sessoes do filtro, nao so a pagina: o painel
+            # reflete o conjunto inteiro sem uma segunda passada no nfdump.
+            resumo=self._resumir(sessoes),
+        )
+
+    @staticmethod
+    def _data_label(query: FlowQuery) -> str:
+        data_label = query.data.isoformat()
+        if query.data_fim and query.data_fim != query.data:
+            data_label = f"{data_label} a {query.data_fim.isoformat()}"
+        return data_label
+
+    def _coletar_sessoes(self, query: FlowQuery) -> List[Sessao]:
+        """Sessoes correlacionadas que casam o filtro, ja resolvidas e filtradas
+        por estado. Base comum da tabela paginada e do resumo agregado."""
         porta = str(query.porta) if query.porta is not None else None
         protocolos = query.protocolos_numericos()
         dias = query.dias()
@@ -123,24 +159,46 @@ class FlowService:
         estados = query.estados_filtro()
         if estados is not None:
             sessoes = [s for s in sessoes if s.status in estados]
+        return sessoes
 
-        total = len(sessoes)
-        total_paginas = max(1, ceil(total / query.tamanho_pagina)) if total else 1
+    @staticmethod
+    def _resumir(sessoes: List[Sessao]) -> FlowResumo:
+        """Agrega o conjunto inteiro: contagem por estado, parciais, duracao
+        media (so sessoes com duracao) e quebra por protocolo."""
+        abertas = fechadas = indefinidas = parciais = 0
+        soma_segundos = 0.0
+        com_duracao = 0
+        por_protocolo: Dict[str, int] = {}
 
-        inicio = (query.pagina - 1) * query.tamanho_pagina
-        fim = inicio + query.tamanho_pagina
-        registros = [_montar_sessao(s) for s in sessoes[inicio:fim]]
+        for sessao in sessoes:
+            if sessao.status == "aberta":
+                abertas += 1
+            elif sessao.status == "fechada":
+                fechadas += 1
+            else:
+                indefinidas += 1
 
-        data_label = query.data.isoformat()
-        if query.data_fim and query.data_fim != query.data:
-            data_label = f"{data_label} a {query.data_fim.isoformat()}"
+            if sessao.parcial:
+                parciais += 1
 
-        return FlowResponse(
-            data=data_label,
-            total=total,
-            pagina=query.pagina,
-            total_paginas=total_paginas,
-            registros=registros,
+            if sessao.duracao_segundos is not None:
+                soma_segundos += sessao.duracao_segundos
+                com_duracao += 1
+
+            proto = _protocolo_display(sessao)
+            por_protocolo[proto] = por_protocolo.get(proto, 0) + 1
+
+        media = soma_segundos / com_duracao if com_duracao else None
+
+        return FlowResumo(
+            total=len(sessoes),
+            abertas=abertas,
+            fechadas=fechadas,
+            indefinidas=indefinidas,
+            parciais=parciais,
+            duracao_media_segundos=media,
+            duracao_media=formatar_duracao(media),
+            por_protocolo=por_protocolo,
         )
 
     def _resolver_pendentes(

@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from ipaddress import ip_address
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from app.parsers.pcap_parser import PROTOCOLO_NUMEROS
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -193,6 +193,24 @@ class FlowSession(BaseModel):
         return str(valor)
 
 
+class FlowResumo(BaseModel):
+    """Agregado das sessoes que casam o filtro inteiro (nao apenas a pagina).
+
+    Calculado sobre todas as sessoes correlacionadas, depois do filtro por
+    estado. Permite ao painel refletir o conjunto completo, e nao so a pagina
+    carregada na tabela.
+    """
+
+    total: int = 0
+    abertas: int = 0
+    fechadas: int = 0
+    indefinidas: int = 0
+    parciais: int = 0
+    duracao_media_segundos: Optional[float] = None
+    duracao_media: Optional[str] = None
+    por_protocolo: Dict[str, int] = Field(default_factory=dict)
+
+
 class FlowResponse(BaseModel):
     """Resposta paginada da consulta de flows."""
 
@@ -201,3 +219,4 @@ class FlowResponse(BaseModel):
     pagina: int
     total_paginas: int
     registros: List[FlowSession]
+    resumo: Optional[FlowResumo] = None

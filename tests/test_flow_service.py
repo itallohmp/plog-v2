@@ -47,6 +47,46 @@ class TestFlowService:
         assert resposta.total_paginas == 1
         assert resposta.registros == []
 
+    def test_resumo_agrega_o_filtro(self, flow_service):
+        query = FlowQuery(data=date(2026, 6, 14))
+        resposta = flow_service.buscar_flows(query)
+
+        resumo = resposta.resumo
+        assert resumo is not None
+        assert resumo.total == 2
+        assert resumo.indefinidas == 2
+        assert resumo.abertas == 0
+        assert resumo.fechadas == 0
+        # Eventos avulsos (indefinidos) nao tem duracao.
+        assert resumo.duracao_media is None
+        assert resumo.duracao_media_segundos is None
+        assert resumo.por_protocolo == {"UDP": 1, "TCP": 1}
+
+    def test_resumo_cobre_alem_da_pagina(self, flow_service):
+        # O ponto da feature: o resumo reflete TODAS as sessoes do filtro,
+        # mesmo quando a pagina exibe apenas uma.
+        query = FlowQuery(data=date(2026, 6, 14), pagina=1, tamanho_pagina=1)
+        resposta = flow_service.buscar_flows(query)
+
+        assert len(resposta.registros) == 1
+        assert resposta.resumo.total == 2
+
+    def test_resumo_respeita_filtro_de_estado(self, flow_service):
+        query = FlowQuery(data=date(2026, 6, 14), status=["aberta"])
+        resposta = flow_service.buscar_flows(query)
+
+        # Nenhuma sessao aberta nas fixtures -> resumo zerado, coerente com a
+        # tabela filtrada.
+        assert resposta.resumo.total == 0
+        assert resposta.resumo.por_protocolo == {}
+
+    def test_sem_resultados_resumo_zerado(self, flow_service):
+        query = FlowQuery(data=date(2026, 6, 14), ip="0.0.0.0")
+        resposta = flow_service.buscar_flows(query)
+
+        assert resposta.resumo is not None
+        assert resposta.resumo.total == 0
+
     def test_propaga_erro_do_repository(self, flow_service, mock_repository):
         mock_repository.fetch_raw_flows.side_effect = FlowNotFoundError(
             "nao encontrado"
