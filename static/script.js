@@ -18,9 +18,32 @@ function applyTheme(theme) {
   else root.removeAttribute("data-theme");
 }
 
+const THEME_ICONS =
+  '<svg class="theme_toggle__moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
+  '<svg class="theme_toggle__sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+
+// Botão flutuante de tema no canto inferior esquerdo, criado por JS para
+// existir em todas as páginas sem depender de markup na nav.
 function initThemeToggle() {
-  const btn = document.getElementById("themeToggle");
-  if (!btn) return;
+  let btn = document.getElementById("themeToggle");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "themeToggle";
+    btn.type = "button";
+    btn.className = "theme_toggle theme_toggle_float";
+    btn.setAttribute("aria-label", "Alternar tema claro/escuro");
+    btn.title = "Alternar tema claro/escuro";
+    btn.innerHTML = THEME_ICONS;
+    document.body.appendChild(btn);
+  }
+
+  const sincronizar = () => {
+    btn.setAttribute(
+      "aria-pressed",
+      String(document.documentElement.getAttribute("data-theme") === "dark")
+    );
+  };
+
   btn.addEventListener("click", () => {
     const dark =
       document.documentElement.getAttribute("data-theme") === "dark";
@@ -31,12 +54,9 @@ function initThemeToggle() {
       /* localStorage indisponível: aplica só nesta navegação */
     }
     applyTheme(proximo);
-    btn.setAttribute("aria-pressed", String(proximo === "dark"));
+    sincronizar();
   });
-  btn.setAttribute(
-    "aria-pressed",
-    String(document.documentElement.getAttribute("data-theme") === "dark")
-  );
+  sincronizar();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
