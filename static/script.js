@@ -18,13 +18,6 @@ document.addEventListener("DOMContentLoaded", function () {
   if (filterForm) {
     if (!requireAuth()) return;
     initPlogPage();
-    return;
-  }
-
-  const anomaliaForm = document.getElementById("anomaliaForm");
-  if (anomaliaForm) {
-    if (!requireAuth()) return;
-    initAnomaliasPage();
   }
 });
 
@@ -604,6 +597,7 @@ async function buscarLogs(page = 1) {
 
   clearTable();
   resetPanorama();
+  resetAnomalias();
 
   const summaryEl = document.getElementById("resultSummary");
   const btn = document.getElementById("btnBuscar");
@@ -663,12 +657,14 @@ async function buscarLogs(page = 1) {
       setStatus("Nenhum resultado", "empty");
       if (summaryEl) summaryEl.textContent = "Tente outra data, IP, porta ou hora.";
       resetPanorama();
+      resetAnomalias();
     } else {
       setStatus(`${registros.length} flows nesta página`, "success");
       if (summaryEl) {
         summaryEl.textContent = `Mostrando ${registros.length} de ${total} resultado(s) — página ${page} de ${totalPaginas}.`;
       }
       atualizarPanorama(payload?.resumo);
+      atualizarAnomalias(payload?.anomalias);
     }
   } catch (err) {
     if (err.name === "AbortError") {
@@ -796,90 +792,31 @@ function setStatus(message, state = "default") {
   summaryEl.dataset.state = state;
 }
 
-// ── Anomalias: ranking de IPs locais por blocos ativos ──
+// ── Anomalias: seção do dashboard, alimentada pela resposta de /flows ──
 
-function initAnomaliasPage() {
-  initLogoutButtons();
-  loadAdminNav();
-  const day = document.getElementById("aDay");
-  if (day && !day.value) day.value = new Date().toISOString().slice(0, 10);
-
-  document.getElementById("anomaliaForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    buscarAnomalias();
-  });
+// Esconde a seção (sem busca, sem resultados ou erro).
+function resetAnomalias() {
+  const section = document.getElementById("anomaliaSection");
+  if (section) section.hidden = true;
 }
 
-function buildAnomaliaUrl() {
-  const day = document.getElementById("aDay")?.value || "";
-  const dayEnd = document.getElementById("aDayEnd")?.value || "";
-  const horaDe = document.getElementById("aHoraDe")?.value.trim() || "";
-  const horaAte = document.getElementById("aHoraAte")?.value.trim() || "";
-  const limiar = document.getElementById("aLimiar")?.value.trim() || "";
-  const ip = document.getElementById("aIp")?.value.trim() || "";
-
-  if (!day) throw new Error("Selecione uma data para analisar.");
-  if (dayEnd && dayEnd < day) {
-    throw new Error("A data final deve ser maior ou igual à inicial.");
-  }
-
-  const params = new URLSearchParams();
-  params.set("data", day);
-  if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
-  if (horaDe) params.set("hora_de", horaDe);
-  if (horaAte) params.set("hora_ate", horaAte);
-  if (limiar) params.set("limiar", limiar);
-  if (ip) params.set("ip", ip);
-  return `${API_PREFIX}/flows/anomalias?${params.toString()}`;
-}
-
-async function buscarAnomalias() {
-  if (!requireAuth()) return;
-  const summary = document.getElementById("anomaliaSummary");
-  const btn = document.getElementById("btnAnalisar");
-
-  let url;
-  try {
-    url = buildAnomaliaUrl();
-  } catch (err) {
-    if (summary) summary.textContent = err.message;
+// Preenche a seção a partir de payload.anomalias, que vem junto da consulta.
+function atualizarAnomalias(anomalias) {
+  const section = document.getElementById("anomaliaSection");
+  const summary = document.getElementById("anomSummary");
+  if (!section) return;
+  if (!anomalias) {
+    resetAnomalias();
     return;
   }
 
-  if (btn) btn.disabled = true;
-  if (summary) summary.textContent = "Analisando blocos no servidor...";
-  renderAnomaliaEmpty("Analisando...");
-
-  try {
-    const resp = await fetchWithAuth(url);
-    const payload = await parseJsonResponse(resp);
-
-    if (resp.status === 401) {
-      if (summary) summary.textContent = "Sessão expirada. Redirecionando...";
-      return;
-    }
-    if (!resp.ok) {
-      const msg = formatError(payload, resp.status);
-      if (summary) summary.textContent = msg;
-      renderAnomaliaEmpty(msg);
-      return;
-    }
-
-    const itens = Array.isArray(payload?.itens) ? payload.itens : [];
-    renderAnomalias(itens, payload?.limiar);
-    if (summary) {
-      summary.textContent = itens.length
-        ? `${payload.total_ips} IP(s) com pico ≥ ${payload.limiar} bloco(s) — ${payload.data}.`
-        : `Nenhum IP acima do limiar (${payload?.limiar}) em ${payload?.data}.`;
-    }
-  } catch (err) {
-    if (err.name !== "AbortError") {
-      if (summary) summary.textContent = "Erro ao analisar blocos.";
-      renderAnomaliaEmpty("Erro ao analisar blocos.");
-      console.error("Erro nas anomalias:", err);
-    }
-  } finally {
-    if (btn) btn.disabled = false;
+  const itens = Array.isArray(anomalias.itens) ? anomalias.itens : [];
+  section.hidden = false;
+  renderAnomalias(itens, anomalias.limiar);
+  if (summary) {
+    summary.textContent = itens.length
+      ? `${anomalias.total_ips} IP(s) com pico ≥ ${anomalias.limiar} bloco(s) simultâneo(s) — investigar.`
+      : `Nenhum IP acima do limiar (${anomalias.limiar}). Distribuição normal.`;
   }
 }
 

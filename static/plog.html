@@ -22,7 +22,6 @@
       <li id="adminNavItem" hidden>
         <a href="/painel.html" class="nav_admin">Painel Admin</a>
       </li>
-      <li><a href="/anomalias.html">Anomalias</a></li>
       <li><a href="/index.html">Página Inicial</a></li>
       <li>
         <button type="button" class="nav_logout" id="btnLogout" data-logout>Sair</button>
@@ -177,6 +176,38 @@
       </div>
     </section>
     </div>
+
+    <section class="anomalia_card" id="anomaliaSection" aria-labelledby="anomTitle" hidden>
+      <div class="section_header">
+        <div>
+          <h2 id="anomTitle">Blocos por IP — possíveis anomalias</h2>
+          <p id="anomSummary" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="table_wrap">
+        <table id="tabelaAnomalias">
+          <caption>IPs locais ordenados por pico de blocos simultâneos</caption>
+          <thead>
+            <tr>
+              <th>IP local</th>
+              <th>TCP</th>
+              <th>UDP</th>
+              <th>ICMP</th>
+              <th>Pico total</th>
+              <th>Abertos</th>
+              <th>NAT</th>
+              <th>Roteador</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="anomalia_hint">
+        Cada célula de protocolo mostra <b>pico</b> · <span class="ab">abertos</span>.
+        Mapa de calor para investigação, não acusação: o normal é ~1 bloco por
+        protocolo; confirme com comportamento sustentado ao longo de vários dias.
+      </p>
+    </section>
 
     <section class="results_card" aria-labelledby="resultsTitle">
       <div class="section_header">

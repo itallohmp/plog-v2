@@ -220,6 +220,8 @@ class FlowResponse(BaseModel):
     total_paginas: int
     registros: List[FlowSession]
     resumo: Optional[FlowResumo] = None
+    # Ranking compacto de IPs com muitos blocos ativos, para o dashboard.
+    anomalias: Optional["AnomaliaResponse"] = None
 
 
 class AnomaliaProtocolo(BaseModel):
@@ -253,3 +255,7 @@ class AnomaliaResponse(BaseModel):
     limiar: int
     total_ips: int
     itens: List[AnomaliaIP]
+
+
+# FlowResponse referencia AnomaliaResponse (definido depois): resolve o forward.
+FlowResponse.model_rebuild()

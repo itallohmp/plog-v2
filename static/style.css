@@ -1036,6 +1036,7 @@ body {
 .hero_card,
 .filter_card,
 .dashboard_card,
+.anomalia_card,
 .results_card {
   border: 1px solid rgba(217, 226, 239, 0.9);
   border-radius: var(--radius-lg);
@@ -1119,6 +1120,7 @@ body {
 
 .filter_card,
 .dashboard_card,
+.anomalia_card,
 .results_card {
   padding: 22px;
   margin-top: 18px;

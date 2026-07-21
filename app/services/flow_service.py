@@ -31,6 +31,9 @@ from app.schemas.flow import (
 
 _PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
 
+# Quantos IPs anomalos acompanham a resposta da consulta (secao do dashboard).
+_ANOMALIA_DASHBOARD_TOP = 10
+
 
 def _protocolo_display(sessao: Sessao) -> str:
     """Protocolo exibido da sessao, mesma regra usada na tabela."""
@@ -107,6 +110,8 @@ class FlowService:
             # Resumo sobre TODAS as sessoes do filtro, nao so a pagina: o painel
             # reflete o conjunto inteiro sem uma segunda passada no nfdump.
             resumo=self._resumir(sessoes),
+            # Ranking de blocos por IP na mesma passada, para a secao do dashboard.
+            anomalias=self._anomalias_dashboard(sessoes, query),
         )
 
     @staticmethod
@@ -229,20 +234,14 @@ class FlowService:
                 pico = atual
         return pico
 
-    def detectar_anomalias(
-        self, query: FlowQuery, limiar=None, top_n=None
-    ) -> AnomaliaResponse:
-        """Ranking de IPs locais com muitos blocos ativos (possivel sub-provedor).
+    @classmethod
+    def _agregar_anomalias(cls, sessoes: List[Sessao], limiar: int) -> List[AnomaliaIP]:
+        """Agrupa as sessoes por IP local e ranqueia por blocos ativos.
 
-        Agrupa as sessoes por IP de origem e, por protocolo e no total, conta os
-        blocos abertos (sem fechamento) e o pico de concorrencia na janela. Lista
-        os IPs cujo pico OU abertos alcancam o limiar, do mais critico ao menos.
+        Por protocolo e no total, conta blocos abertos (sem fechamento) e o pico
+        de concorrencia na janela. Retorna os IPs cujo pico OU abertos alcancam o
+        limiar, do mais critico ao menos. Indefinida nao e bloco (evento avulso).
         """
-        sessoes = self._coletar_sessoes(query)
-        limiar_efetivo = limiar if limiar is not None else config.ANOMALIA_LIMIAR
-        limite_n = top_n or config.ANOMALIA_TOP_N
-
-        # origem -> agregados. Sessao indefinida nao e um bloco (evento avulso).
         dados: Dict[str, Dict[str, Any]] = defaultdict(
             lambda: {
                 "nat": None,
@@ -279,14 +278,14 @@ class FlowService:
         itens: List[AnomaliaIP] = []
         for origem, grupo in dados.items():
             total_abertas = sum(grupo["abertas"].values())
-            total_pico = self._pico_concorrencia(grupo["intervalos_total"])
-            if total_pico < limiar_efetivo and total_abertas < limiar_efetivo:
+            total_pico = cls._pico_concorrencia(grupo["intervalos_total"])
+            if total_pico < limiar and total_abertas < limiar:
                 continue
 
             def metrica(proto: str) -> AnomaliaProtocolo:
                 return AnomaliaProtocolo(
                     abertas=grupo["abertas"].get(proto, 0),
-                    pico=self._pico_concorrencia(grupo["intervalos"].get(proto, [])),
+                    pico=cls._pico_concorrencia(grupo["intervalos"].get(proto, [])),
                 )
 
             itens.append(
@@ -303,11 +302,33 @@ class FlowService:
             )
 
         itens.sort(key=lambda a: (a.total_pico, a.total_abertas), reverse=True)
+        return itens
+
+    def detectar_anomalias(
+        self, query: FlowQuery, limiar=None, top_n=None
+    ) -> AnomaliaResponse:
+        """Relatorio de anomalias sobre a janela (endpoint dedicado)."""
+        limiar_efetivo = limiar if limiar is not None else config.ANOMALIA_LIMIAR
+        limite_n = top_n or config.ANOMALIA_TOP_N
+        itens = self._agregar_anomalias(self._coletar_sessoes(query), limiar_efetivo)
         return AnomaliaResponse(
             data=self._data_label(query),
             limiar=limiar_efetivo,
             total_ips=len(itens),
             itens=itens[:limite_n],
+        )
+
+    def _anomalias_dashboard(
+        self, sessoes: List[Sessao], query: FlowQuery
+    ) -> AnomaliaResponse:
+        """Versao compacta (top poucos) embutida na resposta da consulta."""
+        limiar = config.ANOMALIA_LIMIAR
+        itens = self._agregar_anomalias(sessoes, limiar)
+        return AnomaliaResponse(
+            data=self._data_label(query),
+            limiar=limiar,
+            total_ips=len(itens),
+            itens=itens[:_ANOMALIA_DASHBOARD_TOP],
         )
 
     def _resolver_pendentes(

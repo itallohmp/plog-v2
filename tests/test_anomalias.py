@@ -118,6 +118,18 @@ class TestDetectarAnomalias:
         assert item.tcp.pico == 2       # NAO 3
         assert item.total_pico == 2
 
+    def test_buscar_flows_embute_anomalias(self):
+        # A consulta normal ja traz o ranking (secao do dashboard), sem 2a passada.
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.9.9", pblock=pb)
+            for pb in (10, 20, 30, 40, 50, 60, 70)
+        ]
+        resp = _service(eventos).buscar_flows(FlowQuery(data=date(2026, 7, 15)))
+        assert resp.anomalias is not None
+        assert resp.anomalias.total_ips == 1
+        assert resp.anomalias.itens[0].origem == "100.64.9.9"
+        assert resp.anomalias.itens[0].total_abertas == 7
+
     def test_ranking_ordena_por_pico_desc(self):
         eventos = []
         for pb in (10, 20, 30):  # IP A: 3 abertos
