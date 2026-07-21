@@ -130,6 +130,25 @@ class TestDetectarAnomalias:
         assert resp.anomalias.itens[0].origem == "100.64.9.9"
         assert resp.anomalias.itens[0].total_abertas == 7
 
+    def test_dashboard_lista_maiores_mesmo_sem_anomalia(self):
+        # IP com 3 blocos abertos (abaixo do limiar 6) entra no ranking do
+        # dashboard, mas nao conta como anomalia. IP de 1 bloco fica de fora.
+        eventos = [
+            _ev("10:00:00", "create", origem="100.64.7.7", pblock=pb)
+            for pb in (10, 20, 30)
+        ]
+        eventos += [
+            _ev("09:00:00", "create", origem="100.64.7.1", pblock=1),
+            _ev("09:05:00", "delete", origem="100.64.7.1", pblock=1),
+        ]
+        resp = _service(eventos).buscar_flows(FlowQuery(data=date(2026, 7, 15)))
+
+        anom = resp.anomalias
+        assert anom.total_ips == 0            # nenhum acima do limiar
+        assert len(anom.itens) == 1           # mas o ranking mostra o maior
+        assert anom.itens[0].origem == "100.64.7.7"
+        assert anom.itens[0].total_pico == 3
+
     def test_ranking_ordena_por_pico_desc(self):
         eventos = []
         for pb in (10, 20, 30):  # IP A: 3 abertos

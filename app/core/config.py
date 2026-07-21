@@ -63,6 +63,10 @@ FLOW_NFCAPD_PREFIX = os.getenv("PLOG_FLOW_NFCAPD_PREFIX", "nfcapd")
 ANOMALIA_LIMIAR = int(os.getenv("PLOG_ANOMALIA_LIMIAR", "6"))
 # Teto de IPs retornados no ranking (os mais criticos primeiro).
 ANOMALIA_TOP_N = int(os.getenv("PLOG_ANOMALIA_TOP_N", "100"))
+# Piso do ranking do dashboard: pico minimo para um IP aparecer na lista,
+# mesmo que abaixo do limiar de anomalia. Mantem o ranking util em dia calmo
+# (mostra os maiores consumidores) sem listar os IPs de 1 bloco (o normal).
+ANOMALIA_RANKING_MIN = int(os.getenv("PLOG_ANOMALIA_RANKING_MIN", "2"))
 
 FLOW_PLOG_SECRET_KEY = os.getenv("PLOG_SECRET_KEY")
 FLOW_ALGORITHM = os.getenv("PLOG_ALGORITHM", "HS256")

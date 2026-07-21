@@ -1233,6 +1233,11 @@ body {
   color: var(--color-primary);
 }
 
+.dash_dist__titulo {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .dash_dist__scope {
   font-size: 11px;
   font-weight: 600;

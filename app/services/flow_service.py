@@ -321,13 +321,24 @@ class FlowService:
     def _anomalias_dashboard(
         self, sessoes: List[Sessao], query: FlowQuery
     ) -> AnomaliaResponse:
-        """Versao compacta (top poucos) embutida na resposta da consulta."""
+        """Ranking compacto embutido na resposta da consulta (sempre presente).
+
+        Lista os maiores consumidores a partir do piso do ranking (ex.: pico >= 2),
+        para o painel ser util mesmo sem anomalia. `limiar` continua sendo o de
+        anomalia (para o destaque) e `total_ips` conta so os que o alcancam.
+        """
         limiar = config.ANOMALIA_LIMIAR
-        itens = self._agregar_anomalias(sessoes, limiar)
+        piso = min(config.ANOMALIA_RANKING_MIN, limiar)
+        itens = self._agregar_anomalias(sessoes, piso)
+        flagrantes = sum(
+            1
+            for a in itens
+            if a.total_pico >= limiar or a.total_abertas >= limiar
+        )
         return AnomaliaResponse(
             data=self._data_label(query),
             limiar=limiar,
-            total_ips=len(itens),
+            total_ips=flagrantes,
             itens=itens[:_ANOMALIA_DASHBOARD_TOP],
         )
 

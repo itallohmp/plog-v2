@@ -801,6 +801,9 @@ function resetAnomalias() {
 }
 
 // Preenche a seção a partir de payload.anomalias, que vem junto da consulta.
+// Sempre aparece após uma busca: mostra o ranking dos maiores consumidores de
+// blocos (mesmo sem anomalia) e destaca os que passam do limiar. Só fica oculta
+// se a resposta não trouxer o campo (backend antigo/sem restart).
 function atualizarAnomalias(anomalias) {
   const section = document.getElementById("anomaliaSection");
   const summary = document.getElementById("anomSummary");
@@ -810,13 +813,22 @@ function atualizarAnomalias(anomalias) {
     return;
   }
 
-  const itens = Array.isArray(anomalias.itens) ? anomalias.itens : [];
   section.hidden = false;
+  const itens = Array.isArray(anomalias.itens) ? anomalias.itens : [];
   renderAnomalias(itens, anomalias.limiar);
+
   if (summary) {
-    summary.textContent = itens.length
-      ? `${anomalias.total_ips} IP(s) com pico ≥ ${anomalias.limiar} bloco(s) simultâneo(s) — investigar.`
-      : `Nenhum IP acima do limiar (${anomalias.limiar}). Distribuição normal.`;
+    const lim = anomalias.limiar;
+    if (anomalias.total_ips > 0) {
+      summary.textContent =
+        `${anomalias.total_ips} IP(s) acima do limiar (${lim}) — investigar. Maiores consumidores no ranking.`;
+    } else if (itens.length) {
+      summary.textContent =
+        `Nenhum IP acima do limiar (${lim}). Maiores consumidores de blocos abaixo.`;
+    } else {
+      summary.textContent =
+        "Nenhum IP com blocos concorrentes acima do normal (1 por protocolo).";
+    }
   }
 }
 
@@ -844,7 +856,7 @@ function renderAnomalias(itens, limiar) {
   const tbody = document.querySelector("#tabelaAnomalias tbody");
   if (!tbody) return;
   if (!itens.length) {
-    renderAnomaliaEmpty("Nenhum IP acima do limiar.");
+    renderAnomaliaEmpty("Nenhum IP com blocos concorrentes acima do normal.");
     return;
   }
   const lim = limiar || 6;
