@@ -19,7 +19,15 @@ from app.repositories.flow_repository import (
     FlowQueryError,
     FlowRepository,
 )
-from app.schemas.flow import FlowQuery, FlowResponse, FlowResumo, FlowSession
+from app.schemas.flow import (
+    AnomaliaIP,
+    AnomaliaProtocolo,
+    AnomaliaResponse,
+    FlowQuery,
+    FlowResponse,
+    FlowResumo,
+    FlowSession,
+)
 
 _PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
 
@@ -199,6 +207,107 @@ class FlowService:
             duracao_media_segundos=media,
             duracao_media=formatar_duracao(media),
             por_protocolo=por_protocolo,
+        )
+
+    @staticmethod
+    def _pico_concorrencia(intervalos: List) -> int:
+        """Maximo de intervalos [inicio, fim] sobrepostos ao mesmo tempo.
+
+        Varredura: +1 em cada abertura, -1 em cada fechamento. No mesmo instante
+        o fechamento (-1) vem antes da abertura (+1), entao um bloco que abre
+        exatamente quando outro fecha nao conta como sobreposto (conservador).
+        """
+        eventos = []
+        for inicio, fim in intervalos:
+            eventos.append((inicio, 1))
+            eventos.append((fim, -1))
+        eventos.sort(key=lambda e: (e[0], e[1]))
+        atual = pico = 0
+        for _, delta in eventos:
+            atual += delta
+            if atual > pico:
+                pico = atual
+        return pico
+
+    def detectar_anomalias(
+        self, query: FlowQuery, limiar=None, top_n=None
+    ) -> AnomaliaResponse:
+        """Ranking de IPs locais com muitos blocos ativos (possivel sub-provedor).
+
+        Agrupa as sessoes por IP de origem e, por protocolo e no total, conta os
+        blocos abertos (sem fechamento) e o pico de concorrencia na janela. Lista
+        os IPs cujo pico OU abertos alcancam o limiar, do mais critico ao menos.
+        """
+        sessoes = self._coletar_sessoes(query)
+        limiar_efetivo = limiar if limiar is not None else config.ANOMALIA_LIMIAR
+        limite_n = top_n or config.ANOMALIA_TOP_N
+
+        # origem -> agregados. Sessao indefinida nao e um bloco (evento avulso).
+        dados: Dict[str, Dict[str, Any]] = defaultdict(
+            lambda: {
+                "nat": None,
+                "roteador": None,
+                "abertas": defaultdict(int),
+                "intervalos": defaultdict(list),
+                "intervalos_total": [],
+            }
+        )
+        for sessao in sessoes:
+            if sessao.status == "indefinida":
+                continue
+            base = normalize_pcap_event(sessao.ancora)
+            origem = base.get("origem")
+            if not origem:
+                continue
+            proto = _protocolo_display(sessao)
+            grupo = dados[origem]
+            if grupo["nat"] is None:
+                grupo["nat"] = base.get("nat")
+                grupo["roteador"] = base.get("roteador")
+            if sessao.status == "aberta":
+                grupo["abertas"][proto] += 1
+            if sessao.abertura is not None:
+                # Bloco aberto nunca fecha na janela: estende ate um sentinela
+                # com a mesma consciencia de fuso da abertura (evita comparar
+                # naive com aware na ordenacao).
+                fim = sessao.fechamento or datetime.max.replace(
+                    tzinfo=sessao.abertura.tzinfo
+                )
+                grupo["intervalos"][proto].append((sessao.abertura, fim))
+                grupo["intervalos_total"].append((sessao.abertura, fim))
+
+        itens: List[AnomaliaIP] = []
+        for origem, grupo in dados.items():
+            total_abertas = sum(grupo["abertas"].values())
+            total_pico = self._pico_concorrencia(grupo["intervalos_total"])
+            if total_pico < limiar_efetivo and total_abertas < limiar_efetivo:
+                continue
+
+            def metrica(proto: str) -> AnomaliaProtocolo:
+                return AnomaliaProtocolo(
+                    abertas=grupo["abertas"].get(proto, 0),
+                    pico=self._pico_concorrencia(grupo["intervalos"].get(proto, [])),
+                )
+
+            itens.append(
+                AnomaliaIP(
+                    origem=origem,
+                    nat=grupo["nat"],
+                    roteador=grupo["roteador"],
+                    tcp=metrica("TCP"),
+                    udp=metrica("UDP"),
+                    icmp=metrica("ICMP"),
+                    total_abertas=total_abertas,
+                    total_pico=total_pico,
+                )
+            )
+
+        itens.sort(key=lambda a: (a.total_pico, a.total_abertas), reverse=True)
+        return AnomaliaResponse(
+            data=self._data_label(query),
+            limiar=limiar_efetivo,
+            total_ips=len(itens),
+            itens=itens[:limite_n],
         )
 
     def _resolver_pendentes(

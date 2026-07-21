@@ -18,6 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
   if (filterForm) {
     if (!requireAuth()) return;
     initPlogPage();
+    return;
+  }
+
+  const anomaliaForm = document.getElementById("anomaliaForm");
+  if (anomaliaForm) {
+    if (!requireAuth()) return;
+    initAnomaliasPage();
   }
 });
 
@@ -787,4 +794,136 @@ function setStatus(message, state = "default") {
   const summaryEl = document.getElementById("resultSummary");
   if (!summaryEl) return;
   summaryEl.dataset.state = state;
+}
+
+// ── Anomalias: ranking de IPs locais por blocos ativos ──
+
+function initAnomaliasPage() {
+  initLogoutButtons();
+  loadAdminNav();
+  const day = document.getElementById("aDay");
+  if (day && !day.value) day.value = new Date().toISOString().slice(0, 10);
+
+  document.getElementById("anomaliaForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    buscarAnomalias();
+  });
+}
+
+function buildAnomaliaUrl() {
+  const day = document.getElementById("aDay")?.value || "";
+  const dayEnd = document.getElementById("aDayEnd")?.value || "";
+  const horaDe = document.getElementById("aHoraDe")?.value.trim() || "";
+  const horaAte = document.getElementById("aHoraAte")?.value.trim() || "";
+  const limiar = document.getElementById("aLimiar")?.value.trim() || "";
+  const ip = document.getElementById("aIp")?.value.trim() || "";
+
+  if (!day) throw new Error("Selecione uma data para analisar.");
+  if (dayEnd && dayEnd < day) {
+    throw new Error("A data final deve ser maior ou igual à inicial.");
+  }
+
+  const params = new URLSearchParams();
+  params.set("data", day);
+  if (dayEnd && dayEnd !== day) params.set("data_fim", dayEnd);
+  if (horaDe) params.set("hora_de", horaDe);
+  if (horaAte) params.set("hora_ate", horaAte);
+  if (limiar) params.set("limiar", limiar);
+  if (ip) params.set("ip", ip);
+  return `${API_PREFIX}/flows/anomalias?${params.toString()}`;
+}
+
+async function buscarAnomalias() {
+  if (!requireAuth()) return;
+  const summary = document.getElementById("anomaliaSummary");
+  const btn = document.getElementById("btnAnalisar");
+
+  let url;
+  try {
+    url = buildAnomaliaUrl();
+  } catch (err) {
+    if (summary) summary.textContent = err.message;
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (summary) summary.textContent = "Analisando blocos no servidor...";
+  renderAnomaliaEmpty("Analisando...");
+
+  try {
+    const resp = await fetchWithAuth(url);
+    const payload = await parseJsonResponse(resp);
+
+    if (resp.status === 401) {
+      if (summary) summary.textContent = "Sessão expirada. Redirecionando...";
+      return;
+    }
+    if (!resp.ok) {
+      const msg = formatError(payload, resp.status);
+      if (summary) summary.textContent = msg;
+      renderAnomaliaEmpty(msg);
+      return;
+    }
+
+    const itens = Array.isArray(payload?.itens) ? payload.itens : [];
+    renderAnomalias(itens, payload?.limiar);
+    if (summary) {
+      summary.textContent = itens.length
+        ? `${payload.total_ips} IP(s) com pico ≥ ${payload.limiar} bloco(s) — ${payload.data}.`
+        : `Nenhum IP acima do limiar (${payload?.limiar}) em ${payload?.data}.`;
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      if (summary) summary.textContent = "Erro ao analisar blocos.";
+      renderAnomaliaEmpty("Erro ao analisar blocos.");
+      console.error("Erro nas anomalias:", err);
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderAnomaliaEmpty(message) {
+  const tbody = document.querySelector("#tabelaAnomalias tbody");
+  if (tbody) {
+    tbody.innerHTML =
+      `<tr class="empty_row"><td colspan="8">${escapeHtml(message)}</td></tr>`;
+  }
+}
+
+// Célula de protocolo: pico em destaque, abertos em número menor.
+function protoCell(p) {
+  if (!p || (!p.pico && !p.abertas)) return '<span class="proto_zero">—</span>';
+  return `<b>${p.pico || 0}</b> <span class="ab">${p.abertas || 0}</span>`;
+}
+
+function severidade(pico, limiar) {
+  if (pico >= limiar * 2) return " sev--alto";
+  if (pico >= limiar) return " sev--medio";
+  return "";
+}
+
+function renderAnomalias(itens, limiar) {
+  const tbody = document.querySelector("#tabelaAnomalias tbody");
+  if (!tbody) return;
+  if (!itens.length) {
+    renderAnomaliaEmpty("Nenhum IP acima do limiar.");
+    return;
+  }
+  const lim = limiar || 6;
+  tbody.innerHTML = itens
+    .map(
+      (a) => `
+    <tr>
+      <td class="mono">${escapeHtml(a.origem)}</td>
+      <td>${protoCell(a.tcp)}</td>
+      <td>${protoCell(a.udp)}</td>
+      <td>${protoCell(a.icmp)}</td>
+      <td><span class="pico_total${severidade(a.total_pico, lim)}">${a.total_pico}</span></td>
+      <td class="mono">${a.total_abertas}</td>
+      <td class="mono">${escapeHtml(a.nat || "-")}</td>
+      <td class="mono">${escapeHtml(a.roteador || "-")}</td>
+    </tr>`
+    )
+    .join("");
 }

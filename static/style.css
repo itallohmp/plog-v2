@@ -1349,6 +1349,67 @@ body {
   }
 }
 
+/* ── Anomalias: ranking de blocos por IP ── */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
+}
+
+#tabelaAnomalias td b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+#tabelaAnomalias td .ab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.proto_zero {
+  color: var(--color-border);
+}
+
+.pico_total {
+  display: inline-block;
+  min-width: 30px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: #eef2f8;
+  color: var(--color-primary);
+}
+
+.pico_total.sev--medio {
+  background: #fff4e8;
+  color: #a34b00;
+  border: 1px solid rgba(255, 102, 0, 0.25);
+}
+
+.pico_total.sev--alto {
+  background: #fde8e8;
+  color: #a11717;
+  border: 1px solid rgba(161, 23, 23, 0.2);
+}
+
+.anomalia_hint {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.anomalia_hint .ab {
+  font-family: var(--font-mono);
+  color: var(--color-muted);
+}
+
 .section_header {
   display: flex;
   align-items: flex-start;
@@ -1656,7 +1717,8 @@ button:disabled {
   background: var(--color-surface);
 }
 
-#tabelaLogs {
+#tabelaLogs,
+#tabelaAnomalias {
   min-width: 980px;
   width: 100%;
   padding-bottom: 0;
@@ -1665,7 +1727,8 @@ button:disabled {
   border: 0;
 }
 
-#tabelaLogs caption {
+#tabelaLogs caption,
+#tabelaAnomalias caption {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1674,7 +1737,9 @@ button:disabled {
 }
 
 #tabelaLogs th,
-#tabelaLogs td {
+#tabelaLogs td,
+#tabelaAnomalias th,
+#tabelaAnomalias td {
   border: 0;
   border-bottom: 1px solid var(--color-border);
   padding: 13px 14px;
@@ -1682,7 +1747,8 @@ button:disabled {
   text-align: left;
 }
 
-#tabelaLogs th {
+#tabelaLogs th,
+#tabelaAnomalias th {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1694,19 +1760,23 @@ button:disabled {
   text-transform: uppercase;
 }
 
-#tabelaLogs tbody tr {
+#tabelaLogs tbody tr,
+#tabelaAnomalias tbody tr {
   transition: background 120ms ease;
 }
 
-#tabelaLogs tbody tr:nth-child(even) {
+#tabelaLogs tbody tr:nth-child(even),
+#tabelaAnomalias tbody tr:nth-child(even) {
   background: #fbfdff;
 }
 
-#tabelaLogs tbody tr:hover {
+#tabelaLogs tbody tr:hover,
+#tabelaAnomalias tbody tr:hover {
   background: #fff7ed;
 }
 
-#tabelaLogs tbody tr:hover td:first-child {
+#tabelaLogs tbody tr:hover td:first-child,
+#tabelaAnomalias tbody tr:hover td:first-child {
   box-shadow: inset 3px 0 0 var(--color-accent);
 }
 

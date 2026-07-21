@@ -56,6 +56,14 @@ NAT_LOOKAHEAD_MAX_DIAS = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_DIAS", "3"))
 NFDUMP_LOCAL_BIN = os.getenv("PLOG_NFDUMP_LOCAL_BIN", "nfdump")
 FLOW_NFCAPD_PREFIX = os.getenv("PLOG_FLOW_NFCAPD_PREFIX", "nfcapd")
 
+# Anomalia de blocos: IP local que mantem muitos blocos de porta ativos ao
+# mesmo tempo pode ser sub-provedor / NAT atras de NAT. O normal e ~1 bloco por
+# protocolo (~3 no total). LIMIAR = total de blocos simultaneos (pico) a partir
+# do qual o IP entra no relatorio; ajustavel por env e por parametro na consulta.
+ANOMALIA_LIMIAR = int(os.getenv("PLOG_ANOMALIA_LIMIAR", "6"))
+# Teto de IPs retornados no ranking (os mais criticos primeiro).
+ANOMALIA_TOP_N = int(os.getenv("PLOG_ANOMALIA_TOP_N", "100"))
+
 FLOW_PLOG_SECRET_KEY = os.getenv("PLOG_SECRET_KEY")
 FLOW_ALGORITHM = os.getenv("PLOG_ALGORITHM", "HS256")
 _expire_raw = os.getenv("PLOG_ACCESS_TOKEN_EXPIRE_MINUTES")

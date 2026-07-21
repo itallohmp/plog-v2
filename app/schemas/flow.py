@@ -220,3 +220,36 @@ class FlowResponse(BaseModel):
     total_paginas: int
     registros: List[FlowSession]
     resumo: Optional[FlowResumo] = None
+
+
+class AnomaliaProtocolo(BaseModel):
+    """Blocos de um protocolo para um IP: abertos agora e pico simultaneo."""
+
+    abertas: int = 0
+    pico: int = 0
+
+
+class AnomaliaIP(BaseModel):
+    """Um IP local e sua contagem de blocos, por protocolo e no total.
+
+    `abertas` = blocos sem fechamento (ainda em uso). `pico` = maximo de blocos
+    que estiveram ativos ao mesmo tempo na janela (concorrencia real).
+    """
+
+    origem: str
+    nat: Optional[str] = None
+    roteador: Optional[str] = None
+    tcp: AnomaliaProtocolo = Field(default_factory=AnomaliaProtocolo)
+    udp: AnomaliaProtocolo = Field(default_factory=AnomaliaProtocolo)
+    icmp: AnomaliaProtocolo = Field(default_factory=AnomaliaProtocolo)
+    total_abertas: int = 0
+    total_pico: int = 0
+
+
+class AnomaliaResponse(BaseModel):
+    """Ranking de IPs locais com blocos ativos acima do limiar."""
+
+    data: str
+    limiar: int
+    total_ips: int
+    itens: List[AnomaliaIP]
