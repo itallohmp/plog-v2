@@ -832,7 +832,7 @@ body {
 
 .brand strong {
   display: block;
-  font-size: 20px;
+  font-size: 27px;
   /* Mesmo tracking da marca "PLOG" dos tops de index e login. */
   letter-spacing: 0.14em;
 }
@@ -2481,6 +2481,14 @@ main {
   background: #101012;
 }
 
+/* Rodapé da home acompanha a cor do menubar no escuro (sólido, sem glass). */
+:root[data-theme="dark"] .footer_index {
+  background: #101012;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-top-color: var(--color-border);
+}
+
 :root[data-theme="dark"] .hero_index__card {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
@@ -2515,5 +2523,282 @@ main {
 
 :root[data-theme="dark"] .auth_card__subtitle,
 :root[data-theme="dark"] .auth_card--system .auth_card__subtitle {
+  color: var(--color-muted);
+}
+
+/* ── Botão de série na célula de IP do ranking ── */
+.ip_cell {
+  white-space: nowrap;
+}
+
+.ip_cell__addr {
+  vertical-align: middle;
+}
+
+.ip_serie_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 8px;
+  padding: 0;
+  vertical-align: middle;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-primary-light);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.ip_serie_btn:hover,
+.ip_serie_btn:focus-visible {
+  opacity: 1;
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+tr:hover .ip_serie_btn {
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .ip_serie_btn {
+  background: #202024;
+  color: #9db7e6;
+  border-color: var(--color-border);
+}
+
+:root[data-theme="dark"] .ip_serie_btn:hover,
+:root[data-theme="dark"] .ip_serie_btn:focus-visible {
+  background: var(--color-accent);
+  color: #14140f;
+  border-color: var(--color-accent);
+}
+
+/* ── Modal de picos (elemento <dialog> nativo) ── */
+.serie_modal {
+  width: min(920px, 94vw);
+  max-width: 94vw;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.serie_modal::backdrop {
+  background: rgba(9, 14, 26, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+:root[data-theme="dark"] .serie_modal::backdrop {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.serie_modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.serie_modal__title {
+  margin: 0;
+  font: 800 16px var(--font-sans);
+  color: var(--color-primary);
+}
+
+:root[data-theme="dark"] .serie_modal__title {
+  color: var(--color-text);
+}
+
+.serie_modal__sub {
+  margin: 4px 0 0;
+  font: 500 12.5px var(--font-sans);
+  color: var(--color-muted);
+}
+
+.serie_modal__close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.serie_modal__close:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.serie_modal__body {
+  padding: 16px 20px 20px;
+}
+
+.serie_state {
+  padding: 40px 10px;
+  text-align: center;
+  font: 500 13px var(--font-sans);
+  color: var(--color-muted);
+}
+
+.serie_state--erro {
+  color: #a11717;
+}
+
+:root[data-theme="dark"] .serie_state--erro {
+  color: #f39a9a;
+}
+
+/* ── Gráfico SVG de picos ── */
+.serie_chart_wrap {
+  position: relative;
+}
+
+.serie_chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.serie_chart__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.serie_chart__axis {
+  stroke: var(--color-border);
+  stroke-width: 1.2;
+}
+
+.serie_chart__tick {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.serie_chart__ylabel,
+.serie_chart__xlabel {
+  fill: var(--color-muted);
+  font: 500 11px var(--font-mono);
+}
+
+.serie_chart__ylabel {
+  text-anchor: end;
+}
+
+.serie_chart__xlabel {
+  text-anchor: middle;
+}
+
+.serie_chart__grad0 {
+  stop-color: var(--color-accent);
+  stop-opacity: 0.34;
+}
+
+.serie_chart__grad1 {
+  stop-color: var(--color-accent);
+  stop-opacity: 0.02;
+}
+
+.serie_chart__area {
+  fill: url(#serieGrad);
+}
+
+.serie_chart__line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.serie_chart__limiar {
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+  opacity: 0.75;
+}
+
+.serie_chart__limiarlbl {
+  fill: #ef4444;
+  font: 700 10.5px var(--font-mono);
+  text-anchor: end;
+  opacity: 0.9;
+}
+
+.serie_chart__pico {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.serie_chart__cross {
+  stroke: var(--color-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+.serie_chart__focus {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.serie_chart__overlay {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.serie_tooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 132px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+  display: grid;
+  gap: 2px;
+}
+
+.serie_tooltip b {
+  font: 700 11px var(--font-mono);
+  color: var(--color-text);
+}
+
+.serie_tooltip__tot {
+  font: 800 13px var(--font-sans);
+  color: var(--color-accent);
+}
+
+.serie_tooltip__proto {
+  font: 500 10.5px var(--font-mono);
+  color: var(--color-muted);
+}
+
+.serie_axis_note {
+  margin: 10px 2px 0;
+  font: 500 11.5px var(--font-sans);
   color: var(--color-muted);
 }

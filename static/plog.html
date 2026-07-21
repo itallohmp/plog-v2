@@ -8,16 +8,13 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=3">
+  <link rel="stylesheet" href="/style.css?v=4">
 </head>
 <body class="body_plog">
   <header class="site_header">
     <div class="brand">
       <img src="/img/logo.png" alt="Logo PLog" class="logo">
-      <div>
-        <strong>PLOG</strong>
-        <span>Monitoramento de flows</span>
-      </div>
+      <strong>PLOG</strong>
     </div>
     <ul class="site_header__nav">
       <li id="adminNavItem" hidden>
@@ -250,6 +247,19 @@
     </section>
   </main>
 
+  <!-- Modal de picos: curva de blocos de porta alocados por um IP ao longo do
+       tempo. Elemento <dialog> nativo (foco preso, Esc para fechar, backdrop). -->
+  <dialog id="serieModal" class="serie_modal" aria-labelledby="serieModalTitle">
+    <div class="serie_modal__head">
+      <div>
+        <h3 id="serieModalTitle" class="serie_modal__title">Picos de alocação de portas</h3>
+        <p id="serieModalSub" class="serie_modal__sub" aria-live="polite"></p>
+      </div>
+      <button type="button" class="serie_modal__close" id="serieModalClose" aria-label="Fechar" title="Fechar">×</button>
+    </div>
+    <div class="serie_modal__body" id="serieModalBody"></div>
+  </dialog>
+
   <footer id="rodape">
     <div class="rodape__left">
       <span class="rodape__status" aria-hidden="true"></span>
@@ -260,6 +270,6 @@
     </div>
   </footer>
 
-  <script src="/script.js?v=3"></script>
+  <script src="/script.js?v=4"></script>
 </body>
 </html>
