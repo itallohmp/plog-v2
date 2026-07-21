@@ -6,6 +6,12 @@
   margin: 0;
 }
 
+/* O atributo hidden deve sempre vencer o display de uma classe (ex.: a classe
+   .dash_empty define display:flex e sobreporia o display:none do hidden). */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --color-primary: #002c66;
   --color-primary-light: #06458f;
