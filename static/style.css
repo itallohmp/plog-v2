@@ -511,9 +511,9 @@ body {
 .site_header_login {
   position: relative;
   z-index: 10;
-  background: rgba(0, 20, 50, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* Barra sólida (sem glassmorphism): o vidro translúcido sobre o fundo
+     texturizado deixava o menu com aparência borrada. */
+  background: #001a3d;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
 }
@@ -572,7 +572,9 @@ body {
 .auth_card {
   width: min(440px, 100%);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.97);
+  /* Branco sólido: a translucidez deixava o fundo texturizado vazar e o
+     formulário parecer levemente embaçado. */
+  background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28), var(--shadow-soft);
   overflow: hidden;
@@ -780,22 +782,12 @@ body {
 
 .body_plog {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(255, 102, 0, 0.1), transparent 30rem),
-    radial-gradient(circle at bottom right, rgba(0, 44, 102, 0.06), transparent 25rem),
-    linear-gradient(180deg, #eef4ff 0%, var(--color-bg) 42%, #ffffff 100%);
+  /* Fundo calmo (Regra Plana em Repouso): sem glows radiais decorativos. */
+  background: linear-gradient(180deg, #eef4ff 0%, var(--color-bg) 42%, #ffffff 100%);
   position: relative;
 }
 
-.body_plog::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(rgba(0, 44, 102, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
-  pointer-events: none;
-  z-index: 0;
-}
+.body_plog::before { content: none; }
 
 .site_header {
   position: relative;
@@ -806,9 +798,7 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 44, 102, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--color-primary);
   box-shadow: 0 10px 30px rgba(0, 44, 102, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -1037,9 +1027,7 @@ body {
 .results_card {
   border: 1px solid rgba(217, 226, 239, 0.9);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #ffffff;
   box-shadow: var(--shadow-card), var(--shadow-soft);
 }
 
@@ -1580,8 +1568,6 @@ button:disabled {
   border-radius: 50%;
   background: #22c55e;
   flex-shrink: 0;
-  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
-  animation: status-online 1.8s ease-in-out infinite;
 }
 
 #rodape h3 {
