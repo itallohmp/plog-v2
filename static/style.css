@@ -2212,7 +2212,10 @@ main {
   color: var(--color-accent);
 }
 
-.theme_toggle svg {
+/* Mostra só um ícone por vez: lua no claro (vai para o escuro), sol no escuro.
+   Sem uma regra genérica `.theme_toggle svg` (que venceria os `display:none`
+   por especificidade e mostraria os dois ao mesmo tempo). */
+.theme_toggle__moon {
   display: block;
 }
 
