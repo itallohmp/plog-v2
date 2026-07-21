@@ -76,13 +76,14 @@ busca a um estado — ex.: ver só as sessões ainda **abertas** de um IP. Falta
 
 | ID | Story | Fase | Status |
 | -- | ----- | ---- | ------ |
-| STAT-01 | P1 AC1-AC2 (um estado) | Tasks | Pending |
-| STAT-02 | P1 AC3 (união) | Tasks | Pending |
-| STAT-03 | P1 AC4 (sem filtro) | Tasks | Pending |
-| STAT-04 | P1 AC5 (case-insensitive) | Tasks | Pending |
-| STAT-05 | P1 AC6 (inválido → 422) | Tasks | Pending |
-| STAT-06 | P1 AC7 (pós-lookahead) | Tasks | Pending |
-| STAT-07 | P2 AC1-AC3 (UI) | Tasks | Pending |
+| STAT-01 | P1 AC1-AC2 (um estado) | Execute | Verified |
+| STAT-02 | P1 AC3 (união) | Execute | Verified |
+| STAT-03 | P1 AC4 (sem filtro) | Execute | Verified |
+| STAT-04 | P1 AC5 (case-insensitive) | Execute | Verified |
+| STAT-05 | P1 AC6 (inválido → 422) | Execute | Verified |
+| STAT-06 | P1 AC7 (pós-lookahead) | Execute | Verified |
+| STAT-07 | P2 AC1-AC3 (UI) | Execute | Verified (manual) |
+| STAT-08 | P1 AC8 (AND com demais filtros) | Execute | Verified |
 
 ---
 
