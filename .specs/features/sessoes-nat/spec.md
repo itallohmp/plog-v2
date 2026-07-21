@@ -111,17 +111,17 @@ na tabela.
 
 | Requirement ID | Story | Fase | Status |
 | -------------- | ----- | ---- | ------ |
-| NAT-01 | P1 AC1 (par → fechada + duração) | Tasks | Pending |
-| NAT-02 | P1 AC2 (create sozinho → aberta) | Tasks | Pending |
-| NAT-03 | P1 AC3 (delete órfão → parcial) | Tasks | Pending |
-| NAT-04 | P1 AC4 (realocação sem cruzamento) | Tasks | Pending |
-| NAT-05 | P1 AC5 (indefinido preservado) | Tasks | Pending |
-| NAT-06 | P1 AC6 (ordem cronológica real) | Tasks | Pending |
-| NAT-07 | P2 AC1-AC3 (lookahead nfdump) | Tasks | Pending |
-| NAT-08 | P2 AC4 (sem pendentes = sem consulta) | Tasks | Pending |
-| NAT-09 | P2 AC5 (desligável por env) | Tasks | Pending |
-| NAT-10 | P2 AC6 (filtro por allowlist) | Tasks | Pending |
-| NAT-11 | P3 AC1-AC3 (UI de status) | Tasks | Pending |
+| NAT-01 | P1 AC1 (par → fechada + duração) | Execute | Verified |
+| NAT-02 | P1 AC2 (create sozinho → aberta) | Execute | Verified |
+| NAT-03 | P1 AC3 (delete órfão → parcial) | Execute | Verified |
+| NAT-04 | P1 AC4 (realocação sem cruzamento) | Execute | Verified |
+| NAT-05 | P1 AC5 (indefinido preservado) | Execute | Verified |
+| NAT-06 | P1 AC6 (ordem cronológica real) | Execute | Verified |
+| NAT-07 | P2 AC1-AC3 (lookahead nfdump) | Execute | Verified |
+| NAT-08 | P2 AC4 (sem pendentes = sem consulta) | Execute | Verified |
+| NAT-09 | P2 AC5 (desligável por env) | Execute | Verified |
+| NAT-10 | P2 AC6 (filtro por allowlist) | Execute | Verified |
+| NAT-11 | P3 AC1-AC3 (UI de status) | Execute | Verified |
 
 **Coverage:** 11 requisitos, todos mapeados para etapas (ver plano aprovado).
 
