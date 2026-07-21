@@ -7,7 +7,42 @@ let currentPage = 1;
 let currentTotalPages = 1;
 let currentController = null;
 
+const THEME_KEY = "plog_theme";
+
+// Aplica o tema (dark = preto neutro) marcando o <html>. O CSS reage a
+// [data-theme="dark"]. Um script inline no <head> de cada página já aplica o
+// tema salvo antes da 1a pintura (sem flash); aqui só tratamos a troca.
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "dark") root.setAttribute("data-theme", "dark");
+  else root.removeAttribute("data-theme");
+}
+
+function initThemeToggle() {
+  const btn = document.getElementById("themeToggle");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const dark =
+      document.documentElement.getAttribute("data-theme") === "dark";
+    const proximo = dark ? "light" : "dark";
+    try {
+      localStorage.setItem(THEME_KEY, proximo);
+    } catch (e) {
+      /* localStorage indisponível: aplica só nesta navegação */
+    }
+    applyTheme(proximo);
+    btn.setAttribute("aria-pressed", String(proximo === "dark"));
+  });
+  btn.setAttribute(
+    "aria-pressed",
+    String(document.documentElement.getAttribute("data-theme") === "dark")
+  );
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+  // Toggle de tema roda em qualquer página que tenha o botão (home, consulta).
+  initThemeToggle();
+
   const loginForm = document.getElementById("loginForm");
   if (loginForm) {
     initLoginPage();
