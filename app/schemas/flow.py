@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 MAX_DIAS_INTERVALO = 31
 
+# Estados possiveis de uma sessao NAT (ver app/parsers/nat_session.py).
+ESTADOS_SESSAO = frozenset({"aberta", "fechada", "indefinida"})
+
 
 class FlowQuery(BaseModel):
     """Parametros de consulta validados para a busca de flows."""
@@ -18,6 +21,7 @@ class FlowQuery(BaseModel):
     ip: Optional[str] = None
     porta: Optional[int] = Field(default=None, ge=0, le=65535)
     protocolo: Optional[List[str]] = None
+    status: Optional[List[str]] = None
     hora_de: Optional[int] = Field(default=None, ge=0, le=23)
     hora_ate: Optional[int] = Field(default=None, ge=0, le=23)
     pagina: int = Field(default=1, ge=1)
@@ -50,6 +54,22 @@ class FlowQuery(BaseModel):
                 normalizados.append(nome)
         return normalizados
 
+    @field_validator("status")
+    @classmethod
+    def _validar_status(cls, valor: Optional[List[str]]) -> Optional[List[str]]:
+        if not valor:
+            return None
+
+        normalizados: List[str] = []
+        for item in valor:
+            estado = str(item).strip().lower()
+            if estado not in ESTADOS_SESSAO:
+                validos = ", ".join(sorted(ESTADOS_SESSAO))
+                raise ValueError(f"Estado invalido: use um de {validos}")
+            if estado not in normalizados:
+                normalizados.append(estado)
+        return normalizados
+
     @model_validator(mode="after")
     def _validar_intervalo_datas(self) -> "FlowQuery":
         if self.data_fim is None:
@@ -72,6 +92,12 @@ class FlowQuery(BaseModel):
         if not self.protocolo:
             return None
         return {PROTOCOLO_NUMEROS[nome] for nome in self.protocolo}
+
+    def estados_filtro(self) -> Optional[Set[str]]:
+        """Estados de sessao selecionados, ou None quando sem filtro."""
+        if not self.status:
+            return None
+        return set(self.status)
 
     def horas(self) -> List[int]:
         if self.hora_de is None and self.hora_ate is None:
