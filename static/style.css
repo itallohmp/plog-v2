@@ -1408,6 +1408,10 @@ button:disabled {
 
 .table_wrap {
   width: 100%;
+  /* Altura máxima faz a tabela rolar POR DENTRO do container, o que ativa o
+     cabeçalho sticky (position:sticky do <th>). Sem isso, quem rolava era a
+     página e o cabeçalho não grudava. */
+  max-height: 65vh;
   overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
