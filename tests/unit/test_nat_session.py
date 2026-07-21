@@ -239,3 +239,26 @@ class TestCorrelacionar:
         r = correlacionar([])
         assert r.sessoes == []
         assert r.pendentes == []
+
+
+class TestFormatarDuracao:
+    def test_segundos(self):
+        from app.parsers.nat_session import formatar_duracao
+        assert formatar_duracao(10) == "10s"
+
+    def test_zero(self):
+        from app.parsers.nat_session import formatar_duracao
+        assert formatar_duracao(0) == "0s"
+
+    def test_composto(self):
+        from app.parsers.nat_session import formatar_duracao
+        assert formatar_duracao(3661) == "1h 1m 1s"
+
+    def test_dias(self):
+        from app.parsers.nat_session import formatar_duracao
+        # 10 dias exatos
+        assert formatar_duracao(10 * 86400) == "10d"
+
+    def test_none(self):
+        from app.parsers.nat_session import formatar_duracao
+        assert formatar_duracao(None) is None

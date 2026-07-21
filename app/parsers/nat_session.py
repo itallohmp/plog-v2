@@ -197,3 +197,26 @@ def correlacionar(eventos: List[Dict[str, Any]]) -> CorrelacaoResultado:
     sessoes.sort(key=lambda s: s.ordem)
     pendentes = [sessao for pilha in abertas.values() for sessao in pilha]
     return CorrelacaoResultado(sessoes=sessoes, pendentes=pendentes)
+
+
+def formatar_duracao(segundos: Optional[float]) -> Optional[str]:
+    """Duracao legivel: '10s', '1m 5s', '2h 3m', '182d 4h'. None se indefinida."""
+    if segundos is None:
+        return None
+    total = int(segundos)
+    if total < 0:
+        total = 0
+    dias, resto = divmod(total, 86400)
+    horas, resto = divmod(resto, 3600)
+    minutos, segs = divmod(resto, 60)
+
+    partes = []
+    if dias:
+        partes.append(f"{dias}d")
+    if horas:
+        partes.append(f"{horas}h")
+    if minutos:
+        partes.append(f"{minutos}m")
+    if segs or not partes:
+        partes.append(f"{segs}s")
+    return " ".join(partes)

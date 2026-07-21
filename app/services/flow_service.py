@@ -1,10 +1,57 @@
 from math import ceil
 from typing import Any, Dict, List
 
-from app.parsers.flow_parser import parse_flows
-from app.parsers.pcap_parser import pcap_event_matches
+from app.parsers.nat_session import Sessao, correlacionar, formatar_duracao
+from app.parsers.pcap_parser import normalize_pcap_event, pcap_event_matches
 from app.repositories.flow_repository import FlowNotFoundError, FlowRepository
-from app.schemas.flow import FlowQuery, FlowResponse
+from app.schemas.flow import FlowQuery, FlowResponse, FlowSession
+
+_PROTOCOLOS_NOMEADOS = {"ICMP", "TCP", "UDP"}
+
+
+def _protocolo_da_sessao(sessao: Sessao, base_protocolo: str) -> str:
+    """Prefere um protocolo nomeado entre create e delete.
+
+    Em alocacao de bloco o create pode vir com proto 0/ausente; se o delete
+    tiver um protocolo valido, usa o dele.
+    """
+    if base_protocolo in _PROTOCOLOS_NOMEADOS:
+        return base_protocolo
+    for evento in (sessao.evento_create, sessao.evento_delete):
+        if evento is None:
+            continue
+        candidato = normalize_pcap_event(evento)["protocolo"]
+        if candidato in _PROTOCOLOS_NOMEADOS:
+            return candidato
+    return base_protocolo
+
+
+def _montar_sessao(sessao: Sessao) -> FlowSession:
+    """Converte uma Sessao correlacionada no registro exibido (FlowSession)."""
+    base = normalize_pcap_event(sessao.ancora)
+    abertura = sessao.abertura.isoformat() if sessao.abertura else None
+    fechamento = sessao.fechamento.isoformat() if sessao.fechamento else None
+
+    return FlowSession(
+        data=base["data"],
+        evento=base["evento"],
+        protocolo=_protocolo_da_sessao(sessao, base["protocolo"]),
+        origem=base["origem"],
+        nat=base["nat"],
+        porta_origem=base["porta_origem"],
+        porta_destino=base["porta_destino"],
+        bloco_portas=base["bloco_portas"],
+        destino=base["destino"],
+        destino_final=base["destino_final"],
+        roteador=base["roteador"],
+        status=sessao.status,
+        abertura=abertura,
+        fechamento=fechamento,
+        duracao=formatar_duracao(sessao.duracao_segundos),
+        duracao_segundos=sessao.duracao_segundos,
+        parcial=sessao.parcial,
+        eventos=sessao.eventos,
+    )
 
 
 class FlowService:
@@ -49,12 +96,17 @@ class FlowService:
                 "Nenhum dado encontrado para o intervalo de datas informado."
             )
 
-        total = len(filtrados)
+        # Correlaciona ANTES de paginar: create e delete de uma mesma sessao
+        # precisam estar juntos, o que nao aconteceria se fatiassemos primeiro.
+        resultado = correlacionar(filtrados)
+        sessoes = resultado.sessoes
+
+        total = len(sessoes)
         total_paginas = max(1, ceil(total / query.tamanho_pagina)) if total else 1
 
         inicio = (query.pagina - 1) * query.tamanho_pagina
         fim = inicio + query.tamanho_pagina
-        registros = parse_flows(filtrados[inicio:fim])
+        registros = [_montar_sessao(s) for s in sessoes[inicio:fim]]
 
         data_label = query.data.isoformat()
         if query.data_fim and query.data_fim != query.data:
