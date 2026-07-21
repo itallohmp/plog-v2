@@ -110,6 +110,63 @@ class FlowRecord(BaseModel):
         return str(valor)
 
 
+class FlowSession(BaseModel):
+    """Sessao NAT correlacionada (superset de FlowRecord).
+
+    Mantem os mesmos campos de exibicao de FlowRecord, com a mesma semantica
+    (preenchidos a partir do evento ancora), e acrescenta o estado da sessao.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    # --- compatibilidade com FlowRecord (mesma semantica de exibicao) ---
+    data: Optional[str] = None
+    evento: Optional[str] = None
+    protocolo: Optional[str] = None
+    origem: Optional[str] = None
+    nat: Optional[str] = None
+    porta_origem: Optional[str] = None
+    porta_destino: Optional[str] = None
+    bloco_portas: Optional[str] = None
+    destino: Optional[str] = None
+    destino_final: Optional[str] = None
+    roteador: Optional[str] = None
+
+    # --- estado da sessao ---
+    status: str = "indefinida"  # aberta | fechada | indefinida
+    abertura: Optional[str] = None
+    fechamento: Optional[str] = None
+    duracao: Optional[str] = None
+    duracao_segundos: Optional[float] = None
+    verificado_ate: Optional[str] = None  # so quando status == "aberta"
+    parcial: bool = False  # delete orfao (create fora da janela)
+    eventos: int = 1
+
+    @field_validator(
+        "data",
+        "evento",
+        "protocolo",
+        "origem",
+        "nat",
+        "porta_origem",
+        "porta_destino",
+        "bloco_portas",
+        "destino",
+        "destino_final",
+        "roteador",
+        "abertura",
+        "fechamento",
+        "duracao",
+        "verificado_ate",
+        mode="before",
+    )
+    @classmethod
+    def _coercao_texto(cls, valor):
+        if valor is None:
+            return None
+        return str(valor)
+
+
 class FlowResponse(BaseModel):
     """Resposta paginada da consulta de flows."""
 
@@ -117,4 +174,4 @@ class FlowResponse(BaseModel):
     total: int
     pagina: int
     total_paginas: int
-    registros: List[FlowRecord]
+    registros: List[FlowSession]
