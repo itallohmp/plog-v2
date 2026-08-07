@@ -2648,14 +2648,21 @@ tr:hover .ip_serie_btn {
 
 .serie_modal__close {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
+  padding: 0;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: transparent;
   color: var(--color-muted);
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
+  /* O glifo "×" tem folga superior nas métricas da fonte; um leve empurrão
+     para baixo o deixa opticamente centrado na caixa. */
+  padding-bottom: 2px;
   cursor: pointer;
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
@@ -2820,4 +2827,240 @@ tr:hover .ip_serie_btn {
   margin: 10px 2px 0;
   font: 500 11.5px var(--font-sans);
   color: var(--color-muted);
+}
+
+/* ═══════════════════════ Menu lateral (plog) ═══════════════════════ */
+.plog_sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  background: var(--color-primary);
+  box-shadow: 4px 0 24px rgba(0, 44, 102, 0.18);
+}
+
+:root[data-theme="dark"] .plog_sidebar {
+  background: #101012;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid var(--color-border);
+}
+
+.plog_sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+  color: #ffffff;
+}
+
+.plog_sidebar__logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.plog_sidebar__mark {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+}
+
+.plog_sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plog_sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.86);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.plog_sidebar__link svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.plog_sidebar__link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.plog_sidebar__link--active,
+.plog_sidebar__link--active:hover {
+  background: var(--color-accent);
+  color: #14140f;
+}
+
+.plog_sidebar__link--admin {
+  border: 1px solid rgba(255, 102, 0, 0.45);
+  background: rgba(255, 102, 0, 0.12);
+}
+
+.plog_sidebar__link--admin:hover {
+  background: var(--color-accent);
+  color: #14140f;
+}
+
+.plog_sidebar__foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.plog_sidebar__logout {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.plog_sidebar__logout:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Conteúdo e rodapé cedem espaço para a sidebar (desktop). */
+.body_plog .plog_shell {
+  width: auto;
+  max-width: none;
+  margin-left: 240px;
+  margin-right: 0;
+}
+
+.body_plog #rodape {
+  left: 240px;
+}
+
+/* Hambúrguer + overlay: só entram em cena no mobile. */
+.plog_sidebar_toggle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 1030;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.plog_sidebar_overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1035;
+  background: rgba(9, 14, 26, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.plog_sidebar_overlay[hidden] {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .plog_sidebar {
+    transform: translateX(-100%);
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  body.sidebar-open .plog_sidebar {
+    transform: translateX(0);
+  }
+  .body_plog .plog_shell {
+    margin-left: 0;
+    padding-top: 70px;
+  }
+  .body_plog #rodape {
+    left: 0;
+  }
+  .plog_sidebar_toggle {
+    display: inline-flex;
+  }
+}
+
+/* ═══════════════════════ Zoom da tabela do ranking ═══════════════════════ */
+.rank_zoom {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rank_zoom__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.rank_zoom__btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.rank_zoom__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rank_zoom__val {
+  min-width: 46px;
+  text-align: center;
+  font: 600 12.5px var(--font-mono);
+  color: var(--color-muted);
+}
+
+:root[data-theme="dark"] .rank_zoom__btn {
+  background: #1c1c1f;
+  color: #e5e7eb;
+}
+
+:root[data-theme="dark"] .rank_zoom__btn:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: #14140f;
+  border-color: var(--color-accent);
 }

@@ -8,24 +8,42 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/style.css?v=9">
 </head>
 <body class="body_plog">
-  <header class="site_header">
-    <div class="brand">
-      <img src="/img/logo.png" alt="Logo PLog" class="logo">
-      <strong>PLOG</strong>
+  <!-- Menu lateral (substitui o header do topo nesta página). No mobile vira um
+       drawer acionado pelo hambúrguer, com overlay para fechar. -->
+  <aside class="plog_sidebar" id="plogSidebar" aria-label="Menu lateral">
+    <div class="plog_sidebar__brand">
+      <img src="/img/logo.png" alt="Logo PLog" class="plog_sidebar__logo">
+      <span class="plog_sidebar__mark">PLOG</span>
     </div>
-    <ul class="site_header__nav">
-      <li id="adminNavItem" hidden>
-        <a href="/painel.html" class="nav_admin">Painel Admin</a>
-      </li>
-      <li><a href="/index.html">Página Inicial</a></li>
-      <li>
-        <button type="button" class="nav_logout" id="btnLogout" data-logout>Sair</button>
-      </li>
-    </ul>
-  </header>
+    <nav class="plog_sidebar__nav" aria-label="Navegação principal">
+      <a href="/plog.html" class="plog_sidebar__link plog_sidebar__link--active" aria-current="page">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Consulta</span>
+      </a>
+      <a href="/index.html" class="plog_sidebar__link">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg>
+        <span>Início</span>
+      </a>
+      <a href="/painel.html" class="plog_sidebar__link plog_sidebar__link--admin" id="adminNavItem" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
+        <span>Painel Admin</span>
+      </a>
+    </nav>
+    <div class="plog_sidebar__foot">
+      <button id="themeToggle" class="theme_toggle" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro"></button>
+      <button type="button" class="plog_sidebar__logout" id="btnLogout" data-logout>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Sair</span>
+      </button>
+    </div>
+  </aside>
+  <button type="button" class="plog_sidebar_toggle" id="sidebarToggle" aria-label="Abrir menu" aria-controls="plogSidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="plog_sidebar_overlay" id="sidebarOverlay" hidden></div>
 
   <main class="plog_shell">
     <div class="plog_top">
@@ -72,8 +90,9 @@
           <label for="pageSize">Linhas</label>
           <select id="pageSize">
             <option value="50">50</option>
-            <option value="100" selected>100</option>
+            <option value="100">100</option>
             <option value="200">200</option>
+            <option value="500" selected>500</option>
           </select>
         </div>
 
@@ -182,6 +201,11 @@
           <h2 id="anomTitle">Blocos por IP — ranking</h2>
           <p id="anomSummary" aria-live="polite"></p>
         </div>
+        <div class="rank_zoom" role="group" aria-label="Zoom da tabela do ranking">
+          <button type="button" class="rank_zoom__btn" id="rankZoomOut" aria-label="Diminuir zoom" title="Diminuir zoom">−</button>
+          <span class="rank_zoom__val" id="rankZoomVal">100%</span>
+          <button type="button" class="rank_zoom__btn" id="rankZoomIn" aria-label="Aumentar zoom" title="Aumentar zoom">+</button>
+        </div>
       </div>
       <div class="table_wrap">
         <table id="tabelaAnomalias">
@@ -270,6 +294,6 @@
     </div>
   </footer>
 
-  <script src="/script.js?v=5"></script>
+  <script src="/script.js?v=6"></script>
 </body>
 </html>

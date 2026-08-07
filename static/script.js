@@ -27,15 +27,18 @@ const THEME_ICONS =
 function initThemeToggle() {
   let btn = document.getElementById("themeToggle");
   if (!btn) {
+    // Páginas sem botão no markup ganham o flutuante no canto inferior esquerdo.
     btn = document.createElement("button");
     btn.id = "themeToggle";
     btn.type = "button";
     btn.className = "theme_toggle theme_toggle_float";
     btn.setAttribute("aria-label", "Alternar tema claro/escuro");
     btn.title = "Alternar tema claro/escuro";
-    btn.innerHTML = THEME_ICONS;
     document.body.appendChild(btn);
   }
+  // O plog já traz <button id="themeToggle"> vazio dentro da sidebar; aqui
+  // garantimos os ícones tanto para o flutuante quanto para o do markup.
+  if (!btn.innerHTML.trim()) btn.innerHTML = THEME_ICONS;
 
   const sincronizar = () => {
     btn.setAttribute(
@@ -82,6 +85,8 @@ function initPlogPage() {
   setDefaultDate();
   renderPagination(1, 1);
   initSerieModal();
+  initSidebar();
+  initRankZoom();
 
   const filterForm = document.getElementById("filterForm");
   filterForm.addEventListener("submit", (event) => {
@@ -1235,4 +1240,80 @@ function wireSerieHover(bodyEl, pontos, geo) {
 
   overlay.addEventListener("mousemove", aoMover);
   overlay.addEventListener("mouseleave", () => mostrar(false));
+}
+
+// ── Menu lateral: drawer no mobile (hambúrguer + overlay). No desktop a sidebar
+// fica sempre visível e estes controles ficam ocultos por CSS. ──
+function initSidebar() {
+  const toggle = document.getElementById("sidebarToggle");
+  const sidebar = document.getElementById("plogSidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (!toggle || !sidebar || !overlay) return;
+
+  const fechar = () => {
+    document.body.classList.remove("sidebar-open");
+    overlay.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+  };
+  const abrir = () => {
+    document.body.classList.add("sidebar-open");
+    overlay.hidden = false;
+    toggle.setAttribute("aria-expanded", "true");
+  };
+
+  toggle.addEventListener("click", () => {
+    if (document.body.classList.contains("sidebar-open")) fechar();
+    else abrir();
+  });
+  overlay.addEventListener("click", fechar);
+  // Navegar por um link (ou sair) fecha o drawer.
+  sidebar
+    .querySelectorAll("a, [data-logout]")
+    .forEach((el) => el.addEventListener("click", fechar));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") fechar();
+  });
+}
+
+// ── Zoom da tabela do ranking: botões -/+ ajustam a escala (via CSS `zoom`, que
+// reflui sem distorcer) e persistem em localStorage. Aplicado na tabela, então
+// o wrapper mantém o overflow-x quando ela cresce. ──
+const RANK_ZOOM_KEY = "plog_rank_zoom";
+function initRankZoom() {
+  const btnOut = document.getElementById("rankZoomOut");
+  const btnIn = document.getElementById("rankZoomIn");
+  const val = document.getElementById("rankZoomVal");
+  const table = document.getElementById("tabelaAnomalias");
+  if (!btnOut || !btnIn || !val || !table) return;
+
+  const MIN = 0.7;
+  const MAX = 1.6;
+  const STEP = 0.1;
+
+  let z = parseFloat(localStorage.getItem(RANK_ZOOM_KEY) || "1");
+  if (!Number.isFinite(z)) z = 1;
+  z = Math.min(MAX, Math.max(MIN, z));
+
+  const aplicar = () => {
+    table.style.zoom = z;
+    val.textContent = `${Math.round(z * 100)}%`;
+    btnOut.disabled = z <= MIN + 1e-9;
+    btnIn.disabled = z >= MAX - 1e-9;
+    try {
+      localStorage.setItem(RANK_ZOOM_KEY, String(z));
+    } catch (e) {
+      /* localStorage indisponível: mantém só nesta navegação */
+    }
+  };
+
+  btnOut.addEventListener("click", () => {
+    z = Math.max(MIN, +(z - STEP).toFixed(2));
+    aplicar();
+  });
+  btnIn.addEventListener("click", () => {
+    z = Math.min(MAX, +(z + STEP).toFixed(2));
+    aplicar();
+  });
+
+  aplicar();
 }
