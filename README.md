@@ -12,7 +12,7 @@ numa busca de segundos, acessível a qualquer pessoa do NOC.
 
 ## Principais recursos
 
-- **Busca de flows** por data, **intervalo de datas** (até 31 dias), IP, porta e faixa de horas.
+- **Busca de flows** por data, **intervalo de datas** (até 12 meses), IP, porta e faixa de horas.
 - **Filtro por protocolo** (TCP / UDP / ICMP, múltipla seleção).
 - **Sessões NAT correlacionadas**: cada par `create` + `delete` da mesma tradução vira **uma
   linha** com estado **aberta** (verde) / **fechada** (vermelho) / indefinida, com abertura,

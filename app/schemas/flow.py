@@ -5,7 +5,10 @@ from typing import Dict, List, Optional, Set
 from app.parsers.pcap_parser import PROTOCOLO_NUMEROS
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-MAX_DIAS_INTERVALO = 31
+# Janela maxima por consulta: 12 meses (366 dias, cobre ano bissexto). Cada dia
+# do intervalo e uma leitura nfdump por SSH, entao janelas longas sao
+# proporcionalmente mais lentas (custo linear no numero de dias).
+MAX_DIAS_INTERVALO = 366
 
 # Estados possiveis de uma sessao NAT (ver app/parsers/nat_session.py).
 ESTADOS_SESSAO = frozenset({"aberta", "fechada", "indefinida"})
