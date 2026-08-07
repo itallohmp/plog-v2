@@ -173,6 +173,7 @@ class FlowService:
         # precisam estar juntos, o que nao aconteceria se fatiassemos primeiro.
         resultado = correlacionar(filtrados)
         self._resolver_pendentes(resultado, dias[-1])
+        self._casar_orfaos_para_tras(resultado, dias[0])
 
         # Filtro por estado APOS a resolucao: uma pendente fechada pelo
         # lookahead ja conta como "fechada" aqui.
@@ -546,3 +547,101 @@ class FlowService:
             # LIFO, coerente com correlacionar: fecha a de abertura mais recente.
             alvo = max(candidatas, key=lambda s: s.abertura or datetime.min)
             alvo.fechar(ts, evento)
+
+    def _casar_orfaos_para_tras(
+        self, resultado: CorrelacaoResultado, primeiro_dia: date
+    ) -> None:
+        """Espelho do lookahead, PARA TRAS: completa deletes orfaos com o create.
+
+        Um delete que aparece na janela sem create par (create ocorreu antes do
+        primeiro dia) fica "parcial" apos correlacionar — fechada, mas sem
+        abertura nem duracao. Aqui consultamos os dias anteriores, filtrado pela
+        chave, achamos o create e completamos a sessao. Desligavel por
+        PLOG_NAT_LOOKBEHIND; falha nunca derruba a consulta principal.
+        """
+        if not config.NAT_LOOKBEHIND_ATIVO:
+            return
+
+        orfaos = [
+            s
+            for s in resultado.sessoes
+            if s.abertura is None
+            and s.evento_delete is not None
+            and s.chave is not None
+        ]
+        if not orfaos:
+            return
+
+        chaves: List = []
+        vistas = set()
+        for sessao in orfaos:
+            if sessao.chave not in vistas:
+                vistas.add(sessao.chave)
+                chaves.append(sessao.chave)
+            if len(chaves) >= config.NAT_LOOKAHEAD_MAX_CHAVES:
+                break
+
+        max_dias = max(1, config.NAT_LOOKBEHIND_MAX_DIAS)
+        fim = primeiro_dia - timedelta(days=1)
+        inicio = primeiro_dia - timedelta(days=max_dias)
+        try:
+            extras = self.repository.fetch_flows_por_chave(chaves, inicio, fim)
+        except (FlowNotFoundError, FlowQueryError):
+            # Falha no lookbehind nunca derruba a consulta: os deletes orfaos
+            # apenas continuam parciais (abertura desconhecida).
+            extras = []
+        self._abrir_com_extras(orfaos, extras, primeiro_dia)
+
+    @staticmethod
+    def _abrir_com_extras(
+        orfaos: List[Sessao], extras: List[Dict[str, Any]], primeiro_dia: date
+    ) -> None:
+        """Casa cada delete orfao com o create aberto mais recente antes da janela.
+
+        Reconstroi, por chave, a PILHA de creates ainda abertos ao ENTRAR na
+        janela (create empilha, delete desempilha — a mesma LIFO do
+        correlacionar) e fecha os orfaos, do mais antigo ao mais novo, com o
+        topo da pilha. So considera eventos anteriores ao primeiro dia: no modo
+        local a consulta por chave nao filtra por data, e um evento da propria
+        janela nao pode entrar na reconstrucao do passado.
+        """
+        eventos_por_chave: Dict[Any, List] = defaultdict(list)
+        for evento in extras:
+            classe = classificar_evento(evento)
+            if classe not in ("create", "delete"):
+                continue
+            chave = chave_sessao(evento)
+            ts = timestamp_evento(evento)
+            if chave is None or ts is None or ts.date() >= primeiro_dia:
+                continue
+            eventos_por_chave[chave].append((ts, classe, evento))
+
+        # Creates que seguem abertos por chave ao fim da pre-janela.
+        abertos_por_chave: Dict[Any, List] = {}
+        for chave, eventos in eventos_por_chave.items():
+            eventos.sort(key=lambda e: e[0])
+            pilha: List = []
+            for ts, classe, evento in eventos:
+                if classe == "create":
+                    pilha.append((ts, evento))
+                elif pilha:  # delete fecha o create mais recente ainda aberto
+                    pilha.pop()
+            abertos_por_chave[chave] = pilha
+
+        orfaos_por_chave: Dict[Any, List[Sessao]] = defaultdict(list)
+        for sessao in orfaos:
+            orfaos_por_chave[sessao.chave].append(sessao)
+
+        for chave, lista in orfaos_por_chave.items():
+            pilha = abertos_por_chave.get(chave)
+            if not pilha:
+                continue
+            lista.sort(key=lambda s: s.fechamento or datetime.min)
+            for sessao in lista:
+                if not pilha:
+                    break
+                ts_create, evento_create = pilha.pop()
+                sessao.abertura = ts_create
+                sessao.evento_create = evento_create
+                sessao.parcial = False
+                sessao.eventos += 1

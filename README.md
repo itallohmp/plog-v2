@@ -20,6 +20,8 @@ numa busca de segundos, acessível a qualquer pessoa do NOC.
 - **Filtro por estado** da sessão (aberta / fechada).
 - **Resolução de sessões abertas** além da janela consultada, via consulta `nfdump` filtrada
   por chave (para alocações longas que fecham depois do período buscado).
+- **Resolução de sessões fechadas** cujo `create` é anterior à janela (verificação *para trás*):
+  completa a abertura e a duração de um `delete` "órfão" cujo bloco foi alocado antes do período.
 - **Autenticação JWT** (access + refresh) com senhas em Argon2; usuários em SQLite.
 - Paginação, tratamento de erros semântico e frontend estático servido pela própria API.
 
@@ -51,6 +53,11 @@ atribuir tráfego ao assinante errado quando um bloco de portas é realocado.
 Sessões que ficam abertas na janela são verificadas adiante (dia a dia, filtrado por chave) até
 `PLOG_NAT_LOOKAHEAD_MAX_DIAS`. O lookahead é desligável e nunca derruba a consulta principal.
 
+O caminho inverso também é coberto: um `delete` dentro da janela cujo `create` ocorreu **antes**
+dela vira uma sessão **parcial** (fechada, sem abertura). O **lookbehind** consulta os dias
+anteriores (filtrado por chave, até `PLOG_NAT_LOOKBEHIND_MAX_DIAS`), acha o `create` correto pela
+mesma pilha LIFO e completa a abertura + duração. Também desligável e nunca derruba a consulta.
+
 ## Configuração (variáveis de ambiente)
 
 Nenhuma credencial fica no código. A aplicação **não sobe** sem `PLOG_SECRET_KEY` e
@@ -72,6 +79,11 @@ Nenhuma credencial fica no código. A aplicação **não sobe** sem `PLOG_SECRET
 - `PLOG_NAT_LOOKAHEAD` (`1`/`0`, padrão ligado)
 - `PLOG_NAT_LOOKAHEAD_MAX_DIAS` (padrão `3`) — teto de dias verificados adiante
 - `PLOG_NAT_LOOKAHEAD_MAX_CHAVES` (padrão `200`) — teto de chaves por consulta
+
+**Lookbehind de sessões fechadas (create anterior à janela)**
+- `PLOG_NAT_LOOKBEHIND` (`1`/`0`, padrão ligado)
+- `PLOG_NAT_LOOKBEHIND_MAX_DIAS` (padrão `3`) — teto de dias verificados para trás
+  (reutiliza `PLOG_NAT_LOOKAHEAD_MAX_CHAVES` como teto de chaves)
 
 **Modo local (dev, sem VPN)**
 - `PLOG_FLOW_LOCAL_PATH` — arquivo `.json`/`nfcapd` ou pasta; quando definido, lê daqui em vez

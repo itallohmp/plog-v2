@@ -53,6 +53,16 @@ NAT_LOOKAHEAD_MAX_CHAVES = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_CHAVES", "200")
 # apos ele ficam com verificado_ate = ultimo dia checado.
 NAT_LOOKAHEAD_MAX_DIAS = int(os.getenv("PLOG_NAT_LOOKAHEAD_MAX_DIAS", "3"))
 
+# Espelho do lookahead, mas PARA TRAS. Quando um delete aparece na janela sem o
+# create correspondente (o create ocorreu ANTES do primeiro dia consultado), a
+# sessao fica "parcial" (fechada, mas sem abertura). Ligado, o service consulta
+# os dias anteriores filtrado pela chave para achar o create e completar a
+# sessao (abertura + duracao). Mesma mecanica e seguranca do lookahead; reutiliza
+# NAT_LOOKAHEAD_MAX_CHAVES como teto de chaves. Desligavel pelo mesmo motivo.
+NAT_LOOKBEHIND_ATIVO = os.getenv("PLOG_NAT_LOOKBEHIND", "1") not in ("0", "false", "False")
+# Teto de dias verificados para tras, antes do primeiro dia da janela.
+NAT_LOOKBEHIND_MAX_DIAS = int(os.getenv("PLOG_NAT_LOOKBEHIND_MAX_DIAS", "3"))
+
 NFDUMP_LOCAL_BIN = os.getenv("PLOG_NFDUMP_LOCAL_BIN", "nfdump")
 FLOW_NFCAPD_PREFIX = os.getenv("PLOG_FLOW_NFCAPD_PREFIX", "nfcapd")
 
