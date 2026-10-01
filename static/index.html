@@ -3,54 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script>try{if(localStorage.getItem('plog_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+    <meta name="theme-color" content="#040d1f">
     <title>PLog</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/style.css?v=9">
+    <link rel="stylesheet" href="/style.css?v=10">
 </head>
 <body class="body_index">
-    <header class="site_header_index">
-        <nav class="nav_index">
-            <a href="/" class="nav_index__brand">PLOG</a>
+    <header class="topbar">
+        <a href="/" class="brand" aria-label="PLog — início">
+            <img src="/img/logo-mark.svg" alt="" class="brand__mark" width="32" height="36">
+            <span class="brand__name">PLOG</span>
+        </a>
+        <nav class="topbar__nav">
+            <span class="topbar__version">v2.0</span>
+            <a href="/login.html" class="ghost_button">Entrar</a>
         </nav>
     </header>
-    <main class="main_index">
-        <section class="hero_index">
-            <div class="hero_index__glow" aria-hidden="true"></div>
 
-            <div class="hero_index__card">
-                <span class="logo_ring logo_ring--outer" aria-hidden="true"></span>
-                <span class="logo_ring logo_ring--inner" aria-hidden="true"></span>
-                <span class="logo_orbit" aria-hidden="true"><span class="logo_orbit__dot"></span></span>
-                <span class="logo_orbit logo_orbit--alt" aria-hidden="true"><span class="logo_orbit__dot"></span></span>
-                <span class="logo_pulse" aria-hidden="true"></span>
-                <img src="/img/logo.png" alt="Logo PLog" class="logo_index">
-            </div>
-
-            <p class="hero_index__eyebrow">Análise de flows de rede</p>
-            <p class="hero_index__subtitle">Consulta estruturada de logs com filtros por data, IP e porta.</p>
-
-              <a href="login.html" class="hero_index__cta hero_index__cta--v3">
+    <main class="hero">
+        <section class="hero__copy">
+            <p class="eyebrow">Análise de flows NAT · CGNAT</p>
+            <h1 class="hero__title">Rastreie qualquer<br><span class="hero__accent">sessão NAT</span> em<br>segundos.</h1>
+            <p class="hero__lead">IP público + porta + instante → assinante. O PLog lê o log de tradução (nfcapd), correlaciona create/delete e entrega cada sessão com estado explícito.</p>
+            <a href="/login.html" class="cta_button">
                 Acessar sistema
-                <span class="hero_index__cta-arrow" aria-hidden="true">→</span>
-              </a>
+                <span aria-hidden="true">→</span>
+            </a>
+            <ul class="spec_list" aria-label="Tecnologias suportadas">
+                <li>NFCAPD</li>
+                <li>NETFLOW</li>
+                <li>CGNAT</li>
+                <li>TCP · UDP · ICMP</li>
+                <li>EXPORT CSV</li>
+            </ul>
+        </section>
+
+        <!-- Terminal ilustrativo: mostra o tipo de resposta que o sistema entrega. -->
+        <section class="terminal" aria-hidden="true">
+            <div class="terminal__bar">
+                <span class="terminal__dot"></span>
+                <span class="terminal__dot"></span>
+                <span class="terminal__dot"></span>
+                <span class="terminal__title">noc@plog — consulta</span>
+            </div>
+            <div class="terminal__body">
+                <p><span class="t-prompt">$</span> <b>plog consulta</b> <span class="t-flag">--ip</span> 177.137.21.8 <span class="t-flag">--porta</span> 39936</p>
+                <p class="t-indent"><span class="t-flag">--data</span> 2026-07-23 <span class="t-flag">--hora</span> 12-23</p>
+                <p class="t-gap"><span class="t-flag">›</span> <span class="t-dim">lendo nfcapd.20260723* · 132 arquivos</span> <span class="t-ok">ok</span></p>
+                <p><span class="t-flag">›</span> <span class="t-dim">correlacionando create/delete</span> <span class="t-ok">ok</span></p>
+                <p><span class="t-flag">›</span> <b>4 sessões</b> <span class="t-dim">em 0,42 s</span></p>
+                <table class="terminal__table">
+                    <thead>
+                        <tr><th>Status</th><th>IP local</th><th>Porta NAT</th><th>Início</th><th>Fim</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="session_badge" data-state="aberta">Aberta</span></td><td>100.64.18.210</td><td>39936</td><td>14:02:11</td><td class="t-dim">—</td></tr>
+                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.22.47</td><td>39936</td><td>13:41:05</td><td>13:58:47</td></tr>
+                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.9.133</td><td>39936</td><td>12:17:30</td><td>12:19:02</td></tr>
+                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.31.88</td><td>39936</td><td>12:03:54</td><td>12:05:10</td></tr>
+                    </tbody>
+                </table>
+                <p class="terminal__answer"><span class="t-flag">→</span> <b>100.64.18.210</b> <span class="t-dim">usa 177.137.21.8:39936 desde</span> <b>14:02:11</b></p>
+                <p class="t-gap"><span class="t-prompt">$</span> <span class="t-cursor"></span></p>
+            </div>
         </section>
     </main>
-    <footer id="rodape_index" class="footer_index">
-        <div class="footer_index__inner">
-            <div class="footer_index__brand">
-                <span class="footer_index__logo">PLOG</span>
-                <span class="footer_index__tag">Network Flow Analytics</span>
-            </div>
-            <p class="footer_index__copy">
-                ©2025 Interativa Fibra &amp; Energia Ltda.
-                <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
-            </p>
-            <span class="footer_index__meta">v2.0 · Itallo Polito</span>
-        </div>
+
+    <footer class="site_footer">
+        <p>© 2025 Interativa Fibra &amp; Energia Ltda. · CNPJ 38.174.307/0001-81</p>
+        <p>PLog v2.0</p>
     </footer>
-    <script src="/script.js?v=6"></script>
+    <script src="/script.js?v=7"></script>
 </body>
 </html>

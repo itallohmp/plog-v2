@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function initPainelPage() {
   initLogoutButtons();
+  initSidebar();
 
   const allowed = await requireAdmin();
   if (!allowed) return;
@@ -35,6 +36,7 @@ async function requireAdmin() {
 
     currentAdminId = user.id;
     setUserAdmin(true);
+    fillSidebarUser(user);
     return true;
   } catch (err) {
     console.error("Erro ao verificar permissões:", err);
@@ -67,7 +69,10 @@ async function loadUsers() {
     const users = Array.isArray(payload) ? payload : [];
     renderUsers(users);
     if (summaryEl) {
-      summaryEl.textContent = `${users.length} usuário(s) cadastrado(s).`;
+      const admins = users.filter((u) => u.admin).length;
+      const inativos = users.filter((u) => !u.ativo).length;
+      summaryEl.textContent =
+        `${users.length} usuário(s) · ${admins} administrador(es) · ${inativos} inativo(s)`;
     }
     setPainelStatus("Painel pronto", "success");
   } catch (err) {
@@ -90,20 +95,30 @@ function renderUsers(users) {
   tbody.innerHTML = users
     .map((user) => {
       const isSelf = user.id === currentAdminId;
-      const statusClass = user.ativo ? "table_btn--active" : "table_btn--inactive";
+      const statusClass = user.ativo ? "user_status--active" : "user_status--inactive";
       const statusLabel = user.ativo ? "Ativo" : "Inativo";
       const toggleLabel = user.ativo ? "Desativar" : "Ativar";
+      const nome = String(user.username || "");
+      const partes = nome.split(/[._\-\s]+/).filter(Boolean);
+      const iniciais = (partes.length > 1 ? partes[0][0] + partes[1][0] : nome.slice(0, 2)).toUpperCase();
 
       return `
         <tr>
-          <td>${escapeHtml(user.id)}</td>
-          <td>${escapeHtml(user.username)}</td>
-          <td>${escapeHtml(user.email)}</td>
-          <td>${user.admin ? "Sim" : "Não"}</td>
+          <td class="mono is-muted">${escapeHtml(user.id)}</td>
+          <td>
+            <span class="user_cell">
+              <span class="user_cell__avatar" aria-hidden="true">${escapeHtml(iniciais)}</span>
+              <span class="user_cell__text">
+                <b>${escapeHtml(nome)}${isSelf ? ' <span class="user_cell__self">você</span>' : ""}</b>
+                <span class="user_email" title="${escapeHtml(user.email)}">${escapeHtml(user.email)}</span>
+              </span>
+            </span>
+          </td>
+          <td><span class="role_badge${user.admin ? " role_badge--admin" : ""}">${user.admin ? "Admin" : "Operador"}</span></td>
           <td>
             <span class="user_status ${statusClass}">${statusLabel}</span>
           </td>
-          <td>
+          <td class="is-right">
             <div class="user_actions">
               <button
                 type="button"
@@ -137,7 +152,7 @@ function renderUsersEmpty(message) {
   if (!tbody) return;
   tbody.innerHTML = `
     <tr class="empty_row">
-      <td colspan="6">${escapeHtml(message)}</td>
+      <td colspan="5">${escapeHtml(message)}</td>
     </tr>
   `;
 }

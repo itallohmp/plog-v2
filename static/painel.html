@@ -3,118 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script>try{if(localStorage.getItem('plog_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+  <meta name="theme-color" content="#040d1f">
   <title>PLog — Painel Admin</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=9">
+  <link rel="stylesheet" href="/style.css?v=10">
 </head>
-<body class="body_plog">
-  <header class="site_header">
-    <div class="brand">
-      <img src="/img/logo.png" alt="Logo PLog" class="logo">
-      <div>
-        <strong>PLOG</strong>
-        <span>Painel administrativo</span>
+<body class="body_app">
+  <aside class="sidebar" id="plogSidebar" aria-label="Menu lateral">
+    <a href="/plog.html" class="brand sidebar__brand" aria-label="PLog — consulta">
+      <img src="/img/logo-mark.svg" alt="" class="brand__mark" width="28" height="32">
+      <span class="brand__name">PLOG</span>
+    </a>
+    <nav class="sidebar__nav" aria-label="Navegação principal">
+      <span class="sidebar__label">Menu</span>
+      <a href="/plog.html" class="sidebar__link">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Consulta de flows</span>
+      </a>
+      <a href="/index.html" class="sidebar__link">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg>
+        <span>Início</span>
+      </a>
+      <a href="/painel.html" class="sidebar__link is-active" aria-current="page">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
+        <span>Painel Admin</span>
+      </a>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="sidebar__user">
+        <span class="sidebar__avatar" id="sidebarUserInitials" aria-hidden="true">··</span>
+        <span class="sidebar__user-text">
+          <strong id="sidebarUserName">—</strong>
+          <span id="sidebarUserRole">Administrador</span>
+        </span>
       </div>
+      <button type="button" class="sidebar__logout" data-logout>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Sair</span>
+      </button>
     </div>
-    <ul class="site_header__nav">
-      <li><a href="/plog.html">Consulta de flows</a></li>
-      <li><a href="/index.html">Página Inicial</a></li>
-      <li>
-        <button type="button" class="nav_logout" data-logout>Sair</button>
-      </li>
-    </ul>
-  </header>
+  </aside>
+  <button type="button" class="sidebar_toggle" id="sidebarToggle" aria-label="Abrir menu" aria-controls="plogSidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="sidebar_overlay" id="sidebarOverlay" hidden></div>
 
-  <main class="plog_shell" id="painelApp">
-    <section class="hero_card hero_card--compact" aria-label="Painel administrativo">
-      <p class="eyebrow">Administração</p>
-      <h1>Painel de usuários</h1>
-      <p>Gerencie contas de acesso ao sistema PLog.</p>
-    </section>
+  <main class="app_main" id="painelApp">
+    <div class="page_head">
+      <h1 class="page_title">Usuários do sistema</h1>
+      <span id="painelStatus" class="status_badge" aria-live="polite">Pronto</span>
+    </div>
 
-    <section class="filter_card" aria-labelledby="createUserTitle">
-      <div class="section_header">
-        <div>
-          <h2 id="createUserTitle">Novo usuário</h2>
-          <p>Cadastre login, e-mail e senha. Apenas administradores acessam este painel.</p>
-        </div>
-        <span id="painelStatus" class="status_badge" aria-live="polite">Pronto</span>
-      </div>
+    <div id="painelMessage" class="auth_message" hidden role="alert"></div>
 
-      <div id="painelMessage" class="auth_message" hidden role="alert"></div>
+    <div class="app_row app_row--admin">
+      <section class="card card--form" aria-labelledby="createUserTitle">
+        <h2 class="card__title" id="createUserTitle">Novo usuário</h2>
 
-      <form class="filtros filtros--painel" id="createUserForm">
-        <div class="field">
-          <label for="newUsername">Usuário</label>
-          <input type="text" id="newUsername" name="username" required autocomplete="off" placeholder="Ex: joao.silva">
-        </div>
-
-        <div class="field">
-          <label for="newEmail">E-mail</label>
-          <input type="email" id="newEmail" name="email" required autocomplete="off" placeholder="Ex: joao@empresa.com">
-        </div>
-
-        <div class="field">
-          <label for="newPassword">Senha</label>
-          <input type="password" id="newPassword" name="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres">
-        </div>
-
-        <div class="field field--checkbox field--checkbox-compact">
-          <label class="checkbox_label checkbox_label--compact">
+        <form class="stack_form" id="createUserForm">
+          <div class="field">
+            <label for="newUsername">Usuário</label>
+            <input type="text" id="newUsername" name="username" required autocomplete="off" placeholder="Ex: joao.silva">
+          </div>
+          <div class="field">
+            <label for="newEmail">E-mail</label>
+            <input type="email" id="newEmail" name="email" required autocomplete="off" placeholder="Ex: joao@empresa.com">
+          </div>
+          <div class="field">
+            <label for="newPassword">Senha</label>
+            <input type="password" id="newPassword" name="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres">
+          </div>
+          <label class="option_box">
             <input type="checkbox" id="newAdmin" name="admin">
-            Administrador
+            <span>
+              <strong>Administrador</strong>
+              <small>Pode cadastrar e gerenciar usuários.</small>
+            </span>
           </label>
+          <button type="submit" class="cta_button cta_button--block" id="btnCreateUser">Cadastrar usuário</button>
+        </form>
+      </section>
+
+      <section class="card card--grow" aria-labelledby="usersTitle">
+        <h2 class="card__title" id="usersTitle">Usuários cadastrados</h2>
+        <p class="card__meta" id="usersSummary">Carregando usuários...</p>
+
+        <div class="table_wrap">
+          <table id="usersTable" class="data_table data_table--users">
+            <caption class="sr_only">Lista de usuários do sistema</caption>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Perfil</th>
+                <th>Status</th>
+                <th class="is-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="empty_row">
+                <td colspan="5">Carregando...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </section>
+    </div>
 
-        <button type="submit" class="primary_button" id="btnCreateUser">Cadastrar usuário</button>
-      </form>
-    </section>
-
-    <section class="results_card" aria-labelledby="usersTitle">
-      <div class="section_header">
-        <div>
-          <h2 id="usersTitle">Usuários cadastrados</h2>
-          <p id="usersSummary">Carregando usuários...</p>
-        </div>
-      </div>
-
-      <div class="table_wrap">
-        <table id="usersTable">
-          <caption>Lista de usuários do sistema</caption>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Usuário</th>
-              <th>E-mail</th>
-              <th>Admin</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="empty_row">
-              <td colspan="6">Carregando...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <footer class="app_footer">© 2025 Interativa Fibra &amp; Energia Ltda. · CNPJ 38.174.307/0001-81 · PLog v2.0</footer>
   </main>
 
-  <footer id="rodape">
-    <div class="rodape__left">
-      <span class="rodape__status" aria-hidden="true"></span>
-      <h3>
-        ©2025 Interativa Fibra &amp; Energia Ltda.
-        <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
-      </h3>
-    </div>
-  </footer>
-
-  <script src="/script.js?v=6"></script>
-  <script src="/painel.js"></script>
+  <script src="/script.js?v=7"></script>
+  <script src="/painel.js?v=2"></script>
 </body>
 </html>

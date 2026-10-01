@@ -1,236 +1,173 @@
 ---
 name: PLog
-description: Painel institucional para consulta de flows de tradução NAT (CGNAT)
+description: Console técnico para consulta de flows de tradução NAT (CGNAT)
 colors:
-  azul-institucional: "#002c66"
-  azul-institucional-light: "#06458f"
+  fundo: "#040d1f"
+  superficie: "#0a1730"
+  superficie-2: "#0f1f3d"
+  linha-alternada: "#0c1a35"
+  input: "#06112a"
+  borda: "#1c2f55"
+  borda-forte: "#2a4270"
+  texto: "#e6eefc"
+  texto-2: "#9fb3d4"
+  muted: "#7d93b8"
+  apagado: "#4f6690"
+  azul-marca: "#002c66"
+  azul-eletrico: "#3b8cff"
   laranja-sinal: "#ff6600"
-  superficie: "#ffffff"
-  fundo: "#f3f6fb"
-  tinta: "#172033"
-  neutro-texto: "#344054"
-  neutro-muted: "#6b7280"
-  borda: "#d9e2ef"
-  aberta-fundo: "#e7f8ee"
-  aberta-tinta: "#14703d"
-  fechada-fundo: "#fde8e8"
-  fechada-tinta: "#a11717"
-  indefinida-fundo: "#edf0f5"
-  indefinida-tinta: "#4b5563"
+  laranja-texto: "#ff9a54"
+  aberta: "#3ddc84"
+  fechada: "#ff5c5c"
+  fechada-texto: "#ff7a7a"
 typography:
   heading:
     fontFamily: "Inter, system-ui, -apple-system, sans-serif"
     fontSize: "18px"
     fontWeight: 800
     lineHeight: 1.25
-    letterSpacing: "normal"
   body:
     fontFamily: "Inter, system-ui, -apple-system, sans-serif"
     fontSize: "15px"
     fontWeight: 400
     lineHeight: 1.5
-    letterSpacing: "normal"
   label:
-    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
-    fontSize: "12px"
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "11px"
     fontWeight: 700
     lineHeight: 1.4
-    letterSpacing: "0.06em"
+    letterSpacing: "0.08em"
   data:
     fontFamily: "JetBrains Mono, ui-monospace, monospace"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.5
-    letterSpacing: "normal"
 rounded:
+  sm: "8px"
   md: "12px"
-  lg: "18px"
   pill: "999px"
 spacing:
   xs: "8px"
   sm: "12px"
-  md: "14px"
+  md: "18px"
   lg: "24px"
   xl: "28px"
 components:
   button-primary:
-    backgroundColor: "{colors.azul-institucional}"
-    textColor: "{colors.superficie}"
-    typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    padding: "8px 20px"
-    height: "44px"
-  input:
+    backgroundColor: "{colors.laranja-sinal}"
+    textColor: "#ffffff"
+    typography: "JetBrains Mono 700 15px"
+    rounded: "10px"
+    height: "48px"
+  button-ghost:
     backgroundColor: "{colors.superficie}"
-    textColor: "{colors.tinta}"
-    typography: "{typography.body}"
-    rounded: "{rounded.md}"
-    padding: "10px 12px"
+    textColor: "{colors.texto}"
+    border: "1px {colors.borda}"
+    rounded: "{rounded.sm}"
+    height: "38px"
+  input:
+    backgroundColor: "{colors.input}"
+    textColor: "{colors.texto}"
+    border: "1px {colors.borda}"
+    focus: "borda {colors.azul-eletrico} + anel 4px rgba(59,140,255,.22)"
+    rounded: "{rounded.sm}"
     height: "44px"
   badge-aberta:
-    backgroundColor: "{colors.aberta-fundo}"
-    textColor: "{colors.aberta-tinta}"
-    typography: "{typography.label}"
+    backgroundColor: "rgba(61,220,132,.12)"
+    textColor: "{colors.aberta}"
     rounded: "{rounded.pill}"
-    padding: "3px 10px"
   badge-fechada:
-    backgroundColor: "{colors.fechada-fundo}"
-    textColor: "{colors.fechada-tinta}"
-    typography: "{typography.label}"
+    backgroundColor: "rgba(255,92,92,.12)"
+    textColor: "{colors.fechada-texto}"
     rounded: "{rounded.pill}"
-    padding: "3px 10px"
 ---
 
 # Design System: PLog
 
 ## 1. Overview
 
-**Creative North Star: "O Painel Institucional"**
+**Norte criativo: "O Console do NOC"**
 
-O PLog é o sistema oficial de um provedor para responder, em segundos, *"qual assinante usava
-este IP nesta porta?"*. A interface deve transmitir a autoridade de um sistema corporativo — não
-a leveza de um app de consumo. Azul-marinho institucional domina a moldura (cabeçalho, ação
-primária, títulos); o laranja da marca aparece como **sinal**, nunca como decoração. O resultado
-é sóbrio, ordenado e confiável: a tela de quem trabalha, não a vitrine de quem vende — embora
-precise ser apresentável o bastante para uma demonstração comercial.
+O PLog responde, em segundos, *"qual assinante usava este IP nesta porta?"*. A interface tem cara
+de ferramenta de TI: tema escuro único, grade técnica discreta no fundo, dados em monoespaçada e
+um acento azul elétrico. O laranja da marca é a cor da **ação** (botão primário) e do **sinal**
+(anomalia, item ativo). Tudo serve à leitura dos dados — a tabela continua sendo o herói.
 
-A densidade serve o plantão: cartões brancos limpos sobre um fundo azul-acinzentado, dados em
-fonte monoespaçada para alinhar IPs e portas, e uma tabela que é o herói da tela. Tudo o mais —
-filtros, cabeçalho, paginação — existe para servir a leitura desses dados. O sistema
-explicitamente **rejeita** cara de blog (sem tipografia de display, sem hero), SaaS genérico
-(sem gradientes decorativos, sem "big number" de vaidade, sem grades de cards repetidos) e dump
-de terminal cru (apesar de técnico, tem hierarquia e respiro).
+O visual técnico vem da estrutura (grade, mono, bordas finas, terminal e topologia nas páginas
+públicas), **não de ornamentos de texto**. Ficam proibidos colchetes decorativos (`[ SEÇÃO ]`),
+prompts falsos (`~/plog $`), comentários de código como subtítulo (`// …`) e legendas do tipo
+"FIG.01". Esses recursos parecem gerados, não projetados.
 
-**Key Characteristics:**
-- Azul institucional como moldura; laranja como sinal escasso.
-- Dados sempre em monoespaçada; rótulos em Inter caixa-alta, curta e espaçada.
-- A tabela é o herói; o chrome recua.
-- Estado (aberta/fechada) legível por rótulo **e** cor, nunca só cor.
-- Cartões brancos, cantos suaves, sombras difusas e discretas.
+**Características:**
+- Fundo `#040d1f` com grade de 48px; cartões `#0a1730` com borda `#1c2f55`.
+- Azul elétrico (`#3b8cff`) para foco, seleção, links e realces.
+- Laranja (`#ff6600`) para a ação primária e sinais de anomalia.
+- Rótulos e dados em JetBrains Mono; títulos e corpo em Inter.
+- Estado da sessão sempre por cor **e** rótulo.
 
 ## 2. Colors
 
-Uma base azul-institucional sóbria, neutros frios para estrutura, e um laranja de sinal usado com
-extrema parcimônia; verde e vermelho reservados exclusivamente para o estado da sessão.
+### Base
+- **Fundo** (#040d1f): plano da aplicação, com grade azul a 7% de opacidade.
+- **Superfície** (#0a1730) / **Superfície 2** (#0f1f3d): cartões / cabeçalhos de tabela e realces.
+- **Input** (#06112a): campos de formulário.
+- **Borda** (#1c2f55): contornos, divisórias e linhas de tabela.
 
-### Primary
-- **Azul Institucional** (#002c66): a cor da autoridade. Cabeçalho, ação primária ("Buscar Logs"),
-  títulos de seção, foco de teclado. É a moldura do sistema.
-- **Azul Institucional Claro** (#06458f): segundo tom do azul, usado apenas no gradiente do botão
-  primário (135°) e em realces de foco. Nunca sozinho como cor de texto.
+### Texto
+- **Texto** (#e6eefc) para conteúdo; **Texto 2** (#9fb3d4) para rótulos secundários;
+  **Muted** (#7d93b8) para apoio; **Apagado** (#4f6690) só para placeholders.
 
-### Secondary
-- **Laranja Sinal** (#ff6600): a cor de ênfase da marca. Aparece como sinal — marcador de campo
-  obrigatório, realce na borda esquerda da linha em hover, glow decorativo sutil. Uso ≤ 5% da tela.
-
-### Neutral
-- **Superfície** (#ffffff): fundo dos cartões e das linhas de dados.
-- **Fundo** (#f3f6fb): plano de fundo azul-acinzentado da aplicação; separa os cartões.
-- **Tinta** (#172033): corpo de texto principal (contraste ~13:1 sobre branco).
-- **Neutro Texto** (#344054): rótulos de formulário e cabeçalhos de tabela.
-- **Neutro Muted** (#6b7280): texto de apoio; usar com cautela — nunca para dado crítico.
-- **Borda** (#d9e2ef): contornos de inputs, divisórias de tabela, molduras de cartão.
+### Acentos
+- **Azul elétrico** (#3b8cff): foco, chips selecionados, links e a página atual da paginação.
+- **Laranja sinal** (#ff6600): botão primário, item ativo do menu, pico acima do limiar.
 
 ### Named Rules
-**A Regra do Sinal.** O laranja (#ff6600) é sinal, não enfeite. Ele marca o que exige atenção
-(campo obrigatório, estado, foco) e ocupa ≤ 5% de qualquer tela. Se o laranja está "preenchendo
-espaço", está errado.
+**A Regra do Estado por Cor + Rótulo.** Verde (#3ddc84) e vermelho (#ff5c5c) são exclusivos do
+estado da sessão (aberta/fechada) e **sempre** acompanham o texto do rótulo.
 
-**A Regra do Estado por Cor + Rótulo.** Verde (#14703d) e vermelho (#a11717) são exclusivos do
-estado da sessão (aberta/fechada) e **sempre** acompanham um rótulo de texto. Nunca comunicar
-estado só por cor — daltonismo e monitores de plantão exigem o rótulo.
+**A Regra do Laranja.** Laranja marca ação ou anomalia. No mapa de calor do ranking, laranja = no
+limiar ou acima; azul = morno (3+). A linha de limiar do gráfico de picos é laranja, nunca vermelha.
 
 ## 3. Typography
 
-**Display/Heading Font:** Inter (com system-ui, -apple-system, sans-serif)
-**Body Font:** Inter (mesma família, pesos variados)
-**Label/Mono Font:** JetBrains Mono (com ui-monospace, monospace) — exclusiva para dados
+- **Heading** (Inter 800, 18–24px): títulos de página e de cartão. Sem subtítulo decorativo.
+- **Body** (Inter 400, 15px): textos de apoio e mensagens.
+- **Label** (JetBrains Mono 700, 11px, caixa-alta, 0.08em): rótulos de campo e cabeçalhos de tabela.
+- **Data** (JetBrains Mono 400, 12.5–13px): IPs, portas, timestamps, blocos, contagens.
 
-**Character:** Uma única família humanista (Inter) carrega títulos, rótulos e corpo; a monoespaçada
-(JetBrains Mono) entra só nos dados. O contraste é de função, não de família — sóbrio e legível,
-sem pares tipográficos decorativos.
-
-### Hierarchy
-- **Heading** (800, 18px, 1.25): títulos de seção ("Filtros", "Resultados"). Curto e firme.
-- **Body** (400, 15px, 1.5): texto de apoio, valores de input, mensagens.
-- **Label** (700, 12px, caixa-alta, letter-spacing 0.06em): rótulos de campo e cabeçalhos de
-  tabela. É o "carimbo" institucional da interface.
-- **Data** (400, 13px, JetBrains Mono): toda célula de dado da tabela — IPs, portas, timestamps,
-  blocos. Alinhamento monoespaçado é o que torna a varredura possível.
-
-### Named Rules
-**A Regra do Dado Monoespaçado.** Todo dado técnico (IP, porta, bloco, timestamp) é renderizado em
-JetBrains Mono. O selo de Status é a única exceção na tabela: é rótulo, fica em Inter.
+**A Regra do Dado Monoespaçado.** Todo dado técnico é JetBrains Mono. O selo de Status é rótulo
+e fica em Inter.
 
 ## 4. Elevation
 
-Sistema quase-plano com sombras difusas e discretas. Profundidade vem da estratificação tonal
-(cartão branco sobre fundo azul-acinzentado) mais uma sombra grande e suave que faz o cartão
-"flutuar" sem drama. Nada de sombras duras ou bordas grossas.
-
-### Shadow Vocabulary
-- **Cartão** (`box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08)`): elevação principal dos cartões
-  (filtros, resultados). Grande e translúcida.
-- **Suave** (`box-shadow: 0 4px 24px rgba(0, 44, 102, 0.06)`): reforço curto na cor da marca,
-  usado junto da sombra de cartão.
-- **Glow** (`box-shadow: 0 0 60px rgba(255, 102, 0, 0.08)`): halo laranja decorativo raríssimo;
-  atmosfera, nunca hierarquia.
-- **Foco** (`box-shadow: 0 0 0 4px rgba(0, 44, 102, 0.1)`): anel de foco azul em inputs e selects.
-
-### Named Rules
-**A Regra Plana em Repouso.** Superfícies são planas por padrão; a única sombra permanente é a do
-cartão. Qualquer sombra adicional é resposta a estado (foco, hover), não decoração.
+Profundidade por camadas tonais (fundo → superfície → superfície 2) e bordas finas. Sombras são
+escuras e difusas (`0 12px 32px rgba(0,0,0,.3)`); brilhos azuis/laranja só no terminal da home,
+no modal e no botão primário.
 
 ## 5. Components
 
-### Buttons
-- **Shape:** cantos suaves (12px, `--radius-md`), altura mínima 44px.
-- **Primary:** gradiente azul 135° (#002c66 → #06458f), texto branco, `padding: 8px 20px`, peso
-  800. É a única superfície com gradiente no sistema — reservada à ação.
-- **Hover / Focus:** micro-elevação por `transform` + sombra em 160ms ease; sem bounce.
-
-### Chips (checkbox de filtro)
-- **Style:** rótulo inline com checkbox nativo, `accent-color: #002c66`, texto 14px em Inter. Sem
-  fundo nem borda — o próprio checkbox é o controle. Usados para Protocolo (TCP/UDP/ICMP) e Estado
-  (Aberta/Fechada), agrupados lado a lado.
-- **State:** marcado/desmarcado via checkbox nativo; foco com anel azul (`outline`).
-
-### Cards / Containers
-- **Corner Style:** cantos generosos (18px, `--radius-lg`).
-- **Background:** superfície branca (#ffffff), às vezes translúcida (rgba branco .88) sobre o fundo.
-- **Shadow Strategy:** sombra de Cartão + Suave (ver Elevation).
-- **Border:** 1px sólida #d9e2ef quando precisa de contorno.
-- **Internal Padding:** 22–30px.
-
-### Inputs / Fields
-- **Style:** fundo branco, borda 1px #d9e2ef, raio 12px, altura 44px, texto 15px.
-- **Focus:** borda azul-clara + anel `0 0 0 4px rgba(0,44,102,0.1)`.
-- **Larguras por conteúdo:** campos dimensionados pelo que recebem — horas estreitas (88px), datas
-  médias (152px), IP fluido. Nunca todos com a mesma largura.
-
-### Tabela de Sessões (signature)
-- **Cabeçalho:** sticky, fundo #f0f4fa, rótulos 11px caixa-alta espaçada, cor #344054.
-- **Linhas:** zebra sutil (par #fbfdff), hover #fff7ed com faixa laranja de 3px à esquerda no hover.
-- **Dados:** JetBrains Mono 13px, cor #1e293b, exceto a 1ª coluna (Status).
-- **Selo de Status:** pílula (999px) com dot; verde `aberta`, vermelho `fechada`, cinza
-  `indefinida`; borda tracejada quando `parcial`. É o único elemento colorido por linha.
+- **Botão primário:** laranja, texto branco em mono 700, 48px, raio 10px, brilho laranja suave.
+- **Botão fantasma:** superfície + borda; hover com borda e fundo azul elétrico a 14%.
+- **Inputs:** fundo `#06112a`, borda `#1c2f55`, raio 8px; foco com borda azul e anel de 4px.
+  No login, o campo tem um `>` à esquerda que acende em azul no foco.
+- **Chips (Protocolo/Estado):** pílulas de checkbox sempre visíveis; selecionado = borda azul,
+  fundo azul 14% e ícone de check.
+- **Cartões:** raio 12px, padding 28px, título 18px.
+- **Tabela de sessões (signature):** cabeçalho sticky em mono, zebra `#0c1a35`, hover azul 7%,
+  dados em mono, selo de status em pílula com dot.
+- **Panorama:** total em mono grande, barra aberta × fechada, blocos de estado e lista de métricas.
+- **Menu lateral:** `#06112a`, item ativo com fundo branco 10% e ponto laranja; vira drawer < 1000px.
 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** usar azul institucional (#002c66) para a moldura (cabeçalho, ação primária, títulos, foco).
-- **Do** renderizar todo dado técnico em JetBrains Mono para alinhar IPs, portas e timestamps.
-- **Do** acompanhar o estado da sessão de um rótulo de texto, sempre — verde/vermelho nunca sozinhos.
-- **Do** manter contraste alto (corpo ≥ 4.5:1); tinta #172033 sobre branco é o padrão.
-- **Do** dimensionar campos de filtro pela largura do conteúdo, não todos iguais.
-- **Do** deixar a tabela ser o herói; o chrome recua.
+- **Do** usar a grade, a mono e as bordas finas para dar o tom técnico.
+- **Do** renderizar todo dado técnico em JetBrains Mono.
+- **Do** acompanhar o estado da sessão de um rótulo de texto, sempre.
+- **Do** manter contraste alto: texto `#e6eefc` sobre `#0a1730`.
 
 ### Don't:
-- **Don't** parecer um **blog** ou peça editorial — sem fonte de display, sem hero, sem leitura longa.
-- **Don't** cair em **SaaS genérico** — sem gradientes decorativos, sem "big number" de vaidade, sem
-  grades de cards iguais repetidos.
-- **Don't** virar **terminal cru** — dado técnico não é desculpa para ausência de hierarquia.
-- **Don't** usar o laranja (#ff6600) como preenchimento; ele é sinal, ≤ 5% da tela.
-- **Don't** usar `border-left`/`border-right` colorida > 1px como faixa decorativa em cards ou linhas.
-- **Don't** aplicar gradiente em nada além do botão primário.
+- **Don't** usar colchetes, prompts, `//` ou legendas "FIG." como enfeite de texto.
+- **Don't** pôr subtítulos genéricos sob títulos; só textos com dado real (ex.: "Mostrando 100 de…").
+- **Don't** usar laranja como preenchimento decorativo.
 - **Don't** comunicar estado apenas por cor.
