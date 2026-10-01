@@ -3,213 +3,170 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script>try{if(localStorage.getItem('plog_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
-  <title>PLog</title>
+  <meta name="theme-color" content="#040d1f">
+  <title>PLog — Consulta de flows</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=9">
+  <link rel="stylesheet" href="/style.css?v=10">
 </head>
-<body class="body_plog">
-  <!-- Menu lateral (substitui o header do topo nesta página). No mobile vira um
-       drawer acionado pelo hambúrguer, com overlay para fechar. -->
-  <aside class="plog_sidebar" id="plogSidebar" aria-label="Menu lateral">
-    <div class="plog_sidebar__brand">
-      <img src="/img/logo.png" alt="Logo PLog" class="plog_sidebar__logo">
-      <span class="plog_sidebar__mark">PLOG</span>
-    </div>
-    <nav class="plog_sidebar__nav" aria-label="Navegação principal">
-      <a href="/plog.html" class="plog_sidebar__link plog_sidebar__link--active" aria-current="page">
+<body class="body_app">
+  <!-- Menu lateral. No mobile vira drawer acionado pelo botão de menu, com overlay para fechar. -->
+  <aside class="sidebar" id="plogSidebar" aria-label="Menu lateral">
+    <a href="/plog.html" class="brand sidebar__brand" aria-label="PLog — consulta">
+      <img src="/img/logo-mark.svg" alt="" class="brand__mark" width="28" height="32">
+      <span class="brand__name">PLOG</span>
+    </a>
+    <nav class="sidebar__nav" aria-label="Navegação principal">
+      <span class="sidebar__label">Menu</span>
+      <a href="/plog.html" class="sidebar__link is-active" aria-current="page">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        <span>Consulta</span>
+        <span>Consulta de flows</span>
       </a>
-      <a href="/index.html" class="plog_sidebar__link">
+      <a href="/index.html" class="sidebar__link">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg>
         <span>Início</span>
       </a>
-      <a href="/painel.html" class="plog_sidebar__link plog_sidebar__link--admin" id="adminNavItem" hidden>
+      <a href="/painel.html" class="sidebar__link" id="adminNavItem" hidden>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
         <span>Painel Admin</span>
       </a>
     </nav>
-    <div class="plog_sidebar__foot">
-      <button id="themeToggle" class="theme_toggle" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro"></button>
-      <button type="button" class="plog_sidebar__logout" id="btnLogout" data-logout>
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    <div class="sidebar__foot">
+      <div class="sidebar__user">
+        <span class="sidebar__avatar" id="sidebarUserInitials" aria-hidden="true">··</span>
+        <span class="sidebar__user-text">
+          <strong id="sidebarUserName">—</strong>
+          <span id="sidebarUserRole">Usuário</span>
+        </span>
+      </div>
+      <button type="button" class="sidebar__logout" id="btnLogout" data-logout>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         <span>Sair</span>
       </button>
     </div>
   </aside>
-  <button type="button" class="plog_sidebar_toggle" id="sidebarToggle" aria-label="Abrir menu" aria-controls="plogSidebar" aria-expanded="false">
+  <button type="button" class="sidebar_toggle" id="sidebarToggle" aria-label="Abrir menu" aria-controls="plogSidebar" aria-expanded="false">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
   </button>
-  <div class="plog_sidebar_overlay" id="sidebarOverlay" hidden></div>
+  <div class="sidebar_overlay" id="sidebarOverlay" hidden></div>
 
-  <main class="plog_shell">
-    <div class="plog_top">
-    <section class="filter_card" aria-labelledby="filterTitle">
-      <div class="section_header">
-        <div>
-          <h2 id="filterTitle">Filtros</h2>
-          <p>Selecione a data inicial. Data final, IP, porta, protocolo e intervalo de horas são opcionais.</p>
-        </div>
-      </div>
+  <main class="app_main">
+    <h1 class="page_title">Consulta de flows</h1>
 
-      <form class="filtros" id="filterForm">
-        <div class="field field--data">
-          <label for="day">Data de <span class="field_req" title="Obrigatório">*</span></label>
-          <input type="date" id="day" required>
-        </div>
+    <div class="app_row">
+      <section class="card card--filters" aria-labelledby="filterTitle">
+        <h2 class="card__title" id="filterTitle">Filtros</h2>
 
-        <div class="field field--data">
-          <label for="dayEnd">Data até</label>
-          <input type="date" id="dayEnd">
-        </div>
-
-        <div class="field field--xs">
-          <label for="horaDe">Hora de</label>
-          <input type="number" id="horaDe" min="0" max="23" placeholder="0">
-        </div>
-
-        <div class="field field--xs">
-          <label for="horaAte">Hora até</label>
-          <input type="number" id="horaAte" min="0" max="23" placeholder="23">
-        </div>
-
-        <div class="field field--grow">
-          <label for="ip">IP</label>
-          <input type="text" id="ip" inputmode="decimal" placeholder="Ex: 177.137.21.3">
-        </div>
-
-        <div class="field field--sm">
-          <label for="porta">Porta</label>
-          <input type="number" id="porta" min="0" max="65535" placeholder="Ex: 39936">
-        </div>
-
-        <div class="field field--sm">
-          <label for="pageSize">Linhas</label>
-          <select id="pageSize">
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="500" selected>500</option>
-          </select>
-        </div>
-
-        <details class="more_filters" id="moreFilters">
-          <summary class="more_filters__summary">
-            <span class="more_filters__title">Mais filtros</span>
-            <span class="more_filters__count" id="moreFiltersCount" hidden></span>
-          </summary>
-          <div class="more_filters__body">
-            <div class="field field--protocolo" role="group" aria-labelledby="protocoloLabel">
-              <span class="field_label" id="protocoloLabel">Protocolo</span>
-              <div class="checkbox_row">
-                <label class="checkbox_chip">
-                  <input type="checkbox" name="protocolo" value="tcp"><span>TCP</span>
-                </label>
-                <label class="checkbox_chip">
-                  <input type="checkbox" name="protocolo" value="udp"><span>UDP</span>
-                </label>
-                <label class="checkbox_chip">
-                  <input type="checkbox" name="protocolo" value="icmp"><span>ICMP</span>
-                </label>
-              </div>
+        <form class="filters" id="filterForm">
+          <div class="filters__row">
+            <div class="field field--date">
+              <label for="day">Data de <span class="field_req" title="Obrigatório">*</span></label>
+              <input type="date" id="day" required>
             </div>
-
-            <div class="field field--protocolo" role="group" aria-labelledby="statusLabel">
-              <span class="field_label" id="statusLabel">Estado</span>
-              <div class="checkbox_row">
-                <label class="checkbox_chip">
-                  <input type="checkbox" name="status" value="aberta"><span>Aberta</span>
-                </label>
-                <label class="checkbox_chip">
-                  <input type="checkbox" name="status" value="fechada"><span>Fechada</span>
-                </label>
-              </div>
+            <div class="field field--date">
+              <label for="dayEnd">Data até</label>
+              <input type="date" id="dayEnd">
             </div>
-
-            <p class="more_filters__hint">Nenhum marcado = todos os protocolos e estados.</p>
-          </div>
-        </details>
-
-        <button id="btnBuscar" class="primary_button" type="submit">Buscar Logs</button>
-      </form>
-    </section>
-
-    <section class="dashboard_card" aria-labelledby="dashTitle">
-      <div class="section_header">
-        <div>
-          <h2 id="dashTitle">Panorama</h2>
-          <p id="dashHint">Resumo de todas as sessões que casam o filtro.</p>
-        </div>
-      </div>
-
-      <div class="dash_empty" id="dashEmpty">
-        <span class="dash_empty__icon" aria-hidden="true"></span>
-        <p>Faça uma busca para ver o panorama das sessões NAT.</p>
-      </div>
-
-      <div class="dash_body" id="dashBody" hidden>
-        <div class="dash_dist">
-          <div class="dash_dist__head">
-            <span class="dash_dist__titulo">ABERTO × FECHADO</span>
-            <span class="dash_dist__scope" id="dashScope">todo o filtro</span>
-          </div>
-          <div class="dash_donut">
-            <div class="dash_donut__ring" id="donutRing" role="img" aria-label="Proporção de sessões abertas e fechadas">
-              <div class="dash_donut__hole">
-                <span class="dash_donut__value" id="donutValue">0</span>
-                <span class="dash_donut__cap">sessões</span>
-              </div>
+            <div class="field field--hour">
+              <label for="horaDe">Hora de</label>
+              <input type="number" id="horaDe" class="mono" min="0" max="23" placeholder="0">
             </div>
-            <ul class="dash_dist__legend dash_donut__legend">
-              <li><span class="dash_dot dash_dot--aberta" aria-hidden="true"></span>Aberta <b id="legAberta">0</b></li>
-              <li><span class="dash_dot dash_dot--fechada" aria-hidden="true"></span>Fechada <b id="legFechada">0</b></li>
-              <li class="dash_donut__indef" id="legIndefWrap" hidden><span class="dash_dot dash_dot--indefinida" aria-hidden="true"></span>Indefinida <b id="legIndef">0</b></li>
-            </ul>
+            <div class="field field--hour">
+              <label for="horaAte">Hora até</label>
+              <input type="number" id="horaAte" class="mono" min="0" max="23" placeholder="23">
+            </div>
           </div>
+
+          <div class="filters__row">
+            <div class="field field--grow">
+              <label for="ip">IP</label>
+              <input type="text" id="ip" class="mono" inputmode="decimal" placeholder="Ex: 177.137.21.8">
+            </div>
+            <div class="field field--port">
+              <label for="porta">Porta</label>
+              <input type="number" id="porta" class="mono" min="0" max="65535" placeholder="Ex: 39936">
+            </div>
+            <div class="field field--rows">
+              <label for="pageSize">Linhas</label>
+              <select id="pageSize">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500" selected>500</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filters__row filters__row--chips">
+            <fieldset class="chip_group">
+              <legend>Protocolo</legend>
+              <label class="chip"><input type="checkbox" name="protocolo" value="tcp"><span>TCP</span></label>
+              <label class="chip"><input type="checkbox" name="protocolo" value="udp"><span>UDP</span></label>
+              <label class="chip"><input type="checkbox" name="protocolo" value="icmp"><span>ICMP</span></label>
+            </fieldset>
+            <fieldset class="chip_group">
+              <legend>Estado</legend>
+              <label class="chip"><input type="checkbox" name="status" value="aberta"><span>Aberta</span></label>
+              <label class="chip"><input type="checkbox" name="status" value="fechada"><span>Fechada</span></label>
+            </fieldset>
+          </div>
+          <p class="hint">Nenhum marcado = todos os protocolos e estados.</p>
+
+          <div class="filters__actions">
+            <button type="reset" class="text_button">Limpar filtros</button>
+            <button id="btnBuscar" class="cta_button" type="submit">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.35-4.35"/></svg>
+              Buscar logs
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card card--panorama" aria-labelledby="dashTitle">
+        <h2 class="card__title" id="dashTitle">Panorama</h2>
+
+        <div class="dash_empty" id="dashEmpty">
+          <p>Faça uma busca para ver o panorama das sessões NAT.</p>
         </div>
 
-        <div class="dash_kpis">
-          <div class="dash_kpi">
-            <span class="dash_kpi__value" id="kpiTotal">0</span>
-            <span class="dash_kpi__label">Sessões no filtro</span>
+        <div class="dash_body" id="dashBody" hidden>
+          <p class="dash_total"><span class="mono" id="kpiTotal">0</span> sessões</p>
+          <div class="dash_bar" id="dashBar" role="img" aria-label="Proporção de sessões abertas e fechadas"></div>
+          <div class="dash_states">
+            <div class="dash_state" data-state="aberta">
+              <span class="dash_state__label">Aberta</span>
+              <span class="dash_state__value"><b class="mono" id="legAberta">0</b> <span class="mono" id="legAbertaPct"></span></span>
+            </div>
+            <div class="dash_state" data-state="fechada">
+              <span class="dash_state__label">Fechada</span>
+              <span class="dash_state__value"><b class="mono" id="legFechada">0</b> <span class="mono" id="legFechadaPct"></span></span>
+            </div>
           </div>
-          <div class="dash_kpi">
-            <span class="dash_kpi__value" id="kpiAbertas">0</span>
-            <span class="dash_kpi__label">Abertas</span>
-          </div>
-          <div class="dash_kpi">
-            <span class="dash_kpi__value" id="kpiFechadas">0</span>
-            <span class="dash_kpi__label">Fechadas</span>
-          </div>
-          <div class="dash_kpi">
-            <span class="dash_kpi__value" id="kpiDuracao">—</span>
-            <span class="dash_kpi__label">Duração média</span>
-          </div>
+          <dl class="dash_metrics">
+            <div><dt>Duração média</dt><dd class="mono" id="kpiDuracao">—</dd></div>
+            <div><dt>Protocolos</dt><dd class="mono" id="dashProto">—</dd></div>
+            <div id="legIndefWrap" hidden><dt>Indefinidas</dt><dd class="mono" id="legIndef">0</dd></div>
+          </dl>
         </div>
-
-        <p class="dash_proto" id="dashProto" hidden></p>
-      </div>
-    </section>
+      </section>
     </div>
 
-    <section class="anomalia_card" id="anomaliaSection" aria-labelledby="anomTitle" hidden>
-      <div class="section_header">
+    <section class="card" id="anomaliaSection" aria-labelledby="anomTitle" hidden>
+      <div class="card__head">
         <div>
-          <h2 id="anomTitle">Blocos por IP — ranking</h2>
-          <p id="anomSummary" aria-live="polite"></p>
+          <h2 class="card__title" id="anomTitle">Blocos por IP — ranking</h2>
+          <p class="card__meta" id="anomSummary" aria-live="polite"></p>
         </div>
-        <div class="rank_zoom" role="group" aria-label="Zoom da tabela do ranking">
-          <button type="button" class="rank_zoom__btn" id="rankZoomOut" aria-label="Diminuir zoom" title="Diminuir zoom">−</button>
-          <span class="rank_zoom__val" id="rankZoomVal">100%</span>
-          <button type="button" class="rank_zoom__btn" id="rankZoomIn" aria-label="Aumentar zoom" title="Aumentar zoom">+</button>
+        <div class="zoom" role="group" aria-label="Zoom da tabela do ranking">
+          <button type="button" class="zoom__btn" id="rankZoomOut" aria-label="Diminuir zoom" title="Diminuir zoom">−</button>
+          <span class="zoom__val mono" id="rankZoomVal">100%</span>
+          <button type="button" class="zoom__btn" id="rankZoomIn" aria-label="Aumentar zoom" title="Aumentar zoom">+</button>
         </div>
       </div>
       <div class="table_wrap">
-        <table id="tabelaAnomalias">
-          <caption>IPs locais ordenados por pico de blocos simultâneos</caption>
+        <table id="tabelaAnomalias" class="data_table">
+          <caption class="sr_only">IPs locais ordenados por pico de blocos simultâneos</caption>
           <thead>
             <tr>
               <th>IP local</th>
@@ -220,80 +177,76 @@
               <th>Abertos</th>
               <th>NAT</th>
               <th>Roteador</th>
+              <th><span class="sr_only">Ações</span></th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <p class="anomalia_hint">
-        Cada célula de protocolo mostra <b>pico</b> · <span class="ab">abertos</span>.
-        Mapa de calor para investigação, não acusação: o normal é ~1 bloco por
-        protocolo; confirme com comportamento sustentado ao longo de vários dias.
+      <p class="hint">
+        Cada célula de protocolo mostra o <b>pico</b> e, menor, os abertos. Mapa de calor para
+        investigação, não acusação: o normal é ~1 bloco por protocolo; confirme com comportamento
+        sustentado ao longo de vários dias.
       </p>
     </section>
 
-    <section class="results_card" aria-labelledby="resultsTitle">
-      <div class="section_header">
+    <section class="card" aria-labelledby="resultsTitle">
+      <div class="card__head">
         <div>
-          <h2 id="resultsTitle">Resultados</h2>
-          <p id="resultSummary" aria-live="polite">Nenhuma busca executada.</p>
+          <h2 class="card__title" id="resultsTitle">Resultados</h2>
+          <p class="card__meta" id="resultSummary" aria-live="polite">Nenhuma busca executada.</p>
         </div>
-        <button type="button" id="btnExport" class="secondary_button" disabled title="Exporta todas as sessões dos filtros atuais, com carimbo de filtros e horário">
+        <button type="button" id="btnExport" class="ghost_button" disabled title="Exporta todas as sessões dos filtros atuais, com carimbo de filtros e horário">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
           Exportar CSV
         </button>
       </div>
 
       <div class="table_wrap">
-        <table id="tabelaLogs">
-          <caption>Flows encontrados</caption>
+        <table id="tabelaLogs" class="data_table">
+          <caption class="sr_only">Flows encontrados</caption>
           <thead>
             <tr>
               <th>Status</th>
               <th>Abertura</th>
               <th>Fechamento</th>
               <th>Duração</th>
-              <th>Protocolo</th>
+              <th>Proto</th>
               <th>Origem</th>
               <th>NAT</th>
-              <th>Bloco Portas</th>
+              <th>Bloco portas</th>
               <th>Roteador</th>
             </tr>
           </thead>
           <tbody>
             <tr class="empty_row">
-              <td colspan="9">Use os filtros acima para buscar Logs.</td>
+              <td colspan="9">Use os filtros acima para buscar logs.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div id="pagination" class="pagination pagination--bottom"></div>
+      <div id="pagination" class="pagination"></div>
     </section>
+
+    <footer class="app_footer">© 2025 Interativa Fibra &amp; Energia Ltda. · CNPJ 38.174.307/0001-81 · PLog v2.0</footer>
   </main>
 
-  <!-- Modal de picos: curva de blocos de porta alocados por um IP ao longo do
-       tempo. Elemento <dialog> nativo (foco preso, Esc para fechar, backdrop). -->
+  <!-- Modal de picos: curva de blocos de porta alocados por um IP ao longo do tempo.
+       <dialog> nativo (foco preso, Esc para fechar, backdrop). -->
   <dialog id="serieModal" class="serie_modal" aria-labelledby="serieModalTitle">
     <div class="serie_modal__head">
       <div>
         <h3 id="serieModalTitle" class="serie_modal__title">Picos de alocação de portas</h3>
         <p id="serieModalSub" class="serie_modal__sub" aria-live="polite"></p>
       </div>
-      <button type="button" class="serie_modal__close" id="serieModalClose" aria-label="Fechar" title="Fechar">×</button>
+      <button type="button" class="icon_button" id="serieModalClose" aria-label="Fechar" title="Fechar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
     <div class="serie_modal__body" id="serieModalBody"></div>
   </dialog>
 
-  <footer id="rodape">
-    <div class="rodape__left">
-      <span class="rodape__status" aria-hidden="true"></span>
-      <h3>
-        ©2025 Interativa Fibra &amp; Energia Ltda.
-        <span id="span_rodape">Todos os direitos reservados. CNPJ 38.174.307/0001-81</span>
-      </h3>
-    </div>
-  </footer>
-
-  <script src="/script.js?v=6"></script>
+  <script src="/script.js?v=7"></script>
 </body>
 </html>

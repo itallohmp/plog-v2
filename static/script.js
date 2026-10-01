@@ -7,65 +7,7 @@ let currentPage = 1;
 let currentTotalPages = 1;
 let currentController = null;
 
-const THEME_KEY = "plog_theme";
-
-// Aplica o tema (dark = preto neutro) marcando o <html>. O CSS reage a
-// [data-theme="dark"]. Um script inline no <head> de cada página já aplica o
-// tema salvo antes da 1a pintura (sem flash); aqui só tratamos a troca.
-function applyTheme(theme) {
-  const root = document.documentElement;
-  if (theme === "dark") root.setAttribute("data-theme", "dark");
-  else root.removeAttribute("data-theme");
-}
-
-const THEME_ICONS =
-  '<svg class="theme_toggle__moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
-  '<svg class="theme_toggle__sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
-
-// Botão flutuante de tema no canto inferior esquerdo, criado por JS para
-// existir em todas as páginas sem depender de markup na nav.
-function initThemeToggle() {
-  let btn = document.getElementById("themeToggle");
-  if (!btn) {
-    // Páginas sem botão no markup ganham o flutuante no canto inferior esquerdo.
-    btn = document.createElement("button");
-    btn.id = "themeToggle";
-    btn.type = "button";
-    btn.className = "theme_toggle theme_toggle_float";
-    btn.setAttribute("aria-label", "Alternar tema claro/escuro");
-    btn.title = "Alternar tema claro/escuro";
-    document.body.appendChild(btn);
-  }
-  // O plog já traz <button id="themeToggle"> vazio dentro da sidebar; aqui
-  // garantimos os ícones tanto para o flutuante quanto para o do markup.
-  if (!btn.innerHTML.trim()) btn.innerHTML = THEME_ICONS;
-
-  const sincronizar = () => {
-    btn.setAttribute(
-      "aria-pressed",
-      String(document.documentElement.getAttribute("data-theme") === "dark")
-    );
-  };
-
-  btn.addEventListener("click", () => {
-    const dark =
-      document.documentElement.getAttribute("data-theme") === "dark";
-    const proximo = dark ? "light" : "dark";
-    try {
-      localStorage.setItem(THEME_KEY, proximo);
-    } catch (e) {
-      /* localStorage indisponível: aplica só nesta navegação */
-    }
-    applyTheme(proximo);
-    sincronizar();
-  });
-  sincronizar();
-}
-
 document.addEventListener("DOMContentLoaded", function () {
-  // Toggle de tema roda em qualquer página que tenha o botão (home, consulta).
-  initThemeToggle();
-
   const loginForm = document.getElementById("loginForm");
   if (loginForm) {
     initLoginPage();
@@ -92,6 +34,14 @@ function initPlogPage() {
   filterForm.addEventListener("submit", (event) => {
     event.preventDefault();
     buscarLogs(1);
+  });
+  // "Limpar filtros" volta o formulário ao padrão, mas a data inicial é
+  // obrigatória: repõe a data padrão depois que o reset nativo terminar.
+  filterForm.addEventListener("reset", () => {
+    setTimeout(() => {
+      setDefaultDate();
+      atualizarSeloMaisFiltros();
+    }, 0);
   });
 
   document.getElementById("btnExport")?.addEventListener("click", exportarCSV);
@@ -130,8 +80,24 @@ async function loadAdminNav() {
 
     setUserAdmin(Boolean(user?.admin));
     navItem.hidden = !user?.admin;
+    fillSidebarUser(user);
   } catch (err) {
     console.error("Erro ao verificar perfil:", err);
+  }
+}
+
+// Identifica quem está logado no rodapé do menu lateral (consulta e painel).
+function fillSidebarUser(user) {
+  if (!user?.username) return;
+  const nome = document.getElementById("sidebarUserName");
+  const papel = document.getElementById("sidebarUserRole");
+  const iniciais = document.getElementById("sidebarUserInitials");
+  if (nome) nome.textContent = user.username;
+  if (papel) papel.textContent = user.admin ? "Administrador" : "Operador";
+  if (iniciais) {
+    const partes = user.username.split(/[._\-\s]+/).filter(Boolean);
+    const letras = partes.length > 1 ? partes[0][0] + partes[1][0] : user.username.slice(0, 2);
+    iniciais.textContent = letras.toUpperCase();
   }
 }
 
@@ -627,9 +593,12 @@ function renderPagination(page, totalPages) {
   const nextDisabled = page >= currentTotalPages ? "disabled" : "";
 
   pagination.innerHTML = `
-    <span>Página ${page} de ${currentTotalPages}</span>
-    <button id="btnPrev" type="button" ${prevDisabled}>Anterior</button>
-    <button id="btnNext" type="button" ${nextDisabled}>Próxima</button>
+    <span class="pagination__info mono">Página ${page} de ${currentTotalPages}</span>
+    <div class="pagination__nav">
+      <button id="btnPrev" class="ghost_button" type="button" ${prevDisabled}>‹ Anterior</button>
+      <span class="pagination__current mono" aria-hidden="true">${page}</span>
+      <button id="btnNext" class="ghost_button" type="button" ${nextDisabled}>Próxima ›</button>
+    </div>
   `;
 
   const btnPrev = document.getElementById("btnPrev");
@@ -802,25 +771,29 @@ function atualizarPanorama(resumo) {
   setText("legFechada", fechadas);
   setText("legIndef", indefinidas);
 
-  // Rosca aberto x fechado. Indefinidas ficam fora da proporção (o gráfico é
-  // só sobre aberto/fechado), mas continuam contadas na nota da legenda.
+  // Barra aberto x fechado. Indefinidas ficam fora da proporção (a barra é
+  // só sobre aberto/fechado), mas continuam contadas nas métricas.
   const base = abertas + fechadas;
-  const ring = document.getElementById("donutRing");
-  if (ring) {
+  const fmtPct = (v) => `${v.toFixed(1).replace(".", ",")}%`;
+  const bar = document.getElementById("dashBar");
+  if (bar) {
     if (base > 0) {
       const pctAberta = (abertas / base) * 100;
-      ring.style.background =
-        `conic-gradient(#22c55e 0 ${pctAberta}%, #ef4444 ${pctAberta}% 100%)`;
-      ring.setAttribute(
+      bar.style.setProperty("--pct-aberta", `${pctAberta}%`);
+      bar.classList.remove("is-empty");
+      bar.setAttribute(
         "aria-label",
         `${abertas} aberta(s) e ${fechadas} fechada(s)`
       );
+      setText("legAbertaPct", fmtPct(pctAberta));
+      setText("legFechadaPct", fmtPct(100 - pctAberta));
     } else {
-      ring.style.background = "conic-gradient(#e5e7eb 0 100%)";
-      ring.setAttribute("aria-label", "Sem sessões abertas ou fechadas");
+      bar.classList.add("is-empty");
+      bar.setAttribute("aria-label", "Sem sessões abertas ou fechadas");
+      setText("legAbertaPct", "");
+      setText("legFechadaPct", "");
     }
   }
-  setText("donutValue", base);
 
   const indefWrap = document.getElementById("legIndefWrap");
   if (indefWrap) indefWrap.hidden = indefinidas === 0;
@@ -837,8 +810,7 @@ function atualizarPanorama(resumo) {
     for (const nome of Object.keys(proto)) {
       if (!ordem.includes(nome) && proto[nome]) partes.push(`${nome} ${proto[nome]}`);
     }
-    protoEl.textContent = partes.join("  ·  ");
-    protoEl.hidden = partes.length === 0;
+    protoEl.textContent = partes.length ? partes.join(" · ") : "—";
   }
 
   empty.hidden = true;
@@ -897,14 +869,17 @@ function renderAnomaliaEmpty(message) {
   const tbody = document.querySelector("#tabelaAnomalias tbody");
   if (tbody) {
     tbody.innerHTML =
-      `<tr class="empty_row"><td colspan="8">${escapeHtml(message)}</td></tr>`;
+      `<tr class="empty_row"><td colspan="9">${escapeHtml(message)}</td></tr>`;
   }
 }
 
 // Célula de protocolo: pico em destaque, abertos em número menor.
-function protoCell(p) {
+// Fundo da célula como mapa de calor: quente no limiar, morno a partir de 3.
+function protoCell(p, limiar = 6) {
   if (!p || (!p.pico && !p.abertas)) return '<span class="proto_zero">—</span>';
-  return `<b>${p.pico || 0}</b> <span class="ab">${p.abertas || 0}</span>`;
+  const pico = p.pico || 0;
+  const calor = pico >= limiar ? " heat--alto" : pico >= 3 ? " heat--medio" : "";
+  return `<span class="proto_cell${calor}"><b>${pico}</b> <span class="ab">${p.abertas || 0}</span></span>`;
 }
 
 function severidade(pico, limiar) {
@@ -925,21 +900,21 @@ function renderAnomalias(itens, limiar) {
     .map(
       (a) => `
     <tr>
-      <td class="mono ip_cell">
-        <span class="ip_cell__addr">${escapeHtml(a.origem)}</span>
-        <button type="button" class="ip_serie_btn" data-ip="${escapeHtml(a.origem)}"
-          title="Ver picos de alocação de portas de ${escapeHtml(a.origem)}"
-          aria-label="Ver picos de alocação de portas de ${escapeHtml(a.origem)}">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 4 3-5 6 8"/></svg>
-        </button>
-      </td>
-      <td>${protoCell(a.tcp)}</td>
-      <td>${protoCell(a.udp)}</td>
-      <td>${protoCell(a.icmp)}</td>
+      <td class="mono ip_cell">${escapeHtml(a.origem)}</td>
+      <td>${protoCell(a.tcp, lim)}</td>
+      <td>${protoCell(a.udp, lim)}</td>
+      <td>${protoCell(a.icmp, lim)}</td>
       <td><span class="pico_total${severidade(a.total_pico, lim)}">${a.total_pico}</span></td>
       <td class="mono">${a.total_abertas}</td>
       <td class="mono">${escapeHtml(a.nat || "-")}</td>
       <td class="mono">${escapeHtml(a.roteador || "-")}</td>
+      <td class="is-right">
+        <button type="button" class="ip_serie_btn" data-ip="${escapeHtml(a.origem)}"
+          aria-label="Ver picos de alocação de portas de ${escapeHtml(a.origem)}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/></svg>
+          Ver picos
+        </button>
+      </td>
     </tr>`
     )
     .join("");

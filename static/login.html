@@ -3,98 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script>try{if(localStorage.getItem('plog_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+    <meta name="theme-color" content="#040d1f">
     <title>PLog — Login</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/style.css?v=9">
+    <link rel="stylesheet" href="/style.css?v=10">
 </head>
 <body class="body_login">
-    <div class="tech-bg" aria-hidden="true">
-      <span class="tech-tok" style="left:6%;  top:22%; font-size:13px; --dur:26s; --delay:0s;  --o:0.10">100.64.18.210 &#8594; 177.137.21.8</span>
-      <span class="tech-tok" style="left:70%; top:14%; font-size:12px; --dur:31s; --delay:3s;  --o:0.08">NAT translation create</span>
-      <span class="tech-tok" style="left:18%; top:64%; font-size:12px; --dur:29s; --delay:6s;  --o:0.09">pblock 44032-44543</span>
-      <span class="tech-tok" style="left:80%; top:58%; font-size:11px; --dur:34s; --delay:1.5s;--o:0.07">ip4_router 172.16.2.1</span>
-      <span class="tech-tok" style="left:40%; top:12%; font-size:11px; --dur:28s; --delay:9s;  --o:0.07">proto UDP</span>
-      <span class="tech-tok" style="left:52%; top:74%; font-size:13px; --dur:33s; --delay:4s;  --o:0.09">2026-07-21T01:00:05.204</span>
-      <span class="tech-tok" style="left:10%; top:42%; font-size:12px; --dur:30s; --delay:12s; --o:0.08">session=aberta</span>
-      <span class="tech-tok" style="left:64%; top:38%; font-size:12px; --dur:27s; --delay:7s;  --o:0.08">delete 19456-19967</span>
-      <span class="tech-tok" style="left:30%; top:84%; font-size:11px; --dur:32s; --delay:2s;  --o:0.06">TCP 5632-6143</span>
-      <span class="tech-tok" style="left:86%; top:30%; font-size:11px; --dur:29s; --delay:14s; --o:0.07">GET /api/flows 200</span>
-      <span class="tech-tok" style="left:24%; top:30%; font-size:11px; --dur:35s; --delay:5s;  --o:0.06">nfdump -R &#8230; -o json</span>
-      <span class="tech-tok tech-tok--signal" style="left:58%; top:52%; font-size:12px; --dur:30s; --delay:10s; --o:0.10">ALERT src 177.137.21.8</span>
-    </div>
-    <style id="tech-bg-style">
-      .tech-bg {
-        position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none;
-        /* malha de console tênue */
-        background-image:
-          linear-gradient(rgba(174,196,227,0.035) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(174,196,227,0.035) 1px, transparent 1px);
-        background-size: 44px 44px;
-        mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-        -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-      }
-      .site_header_login, .main_login, .footer_login { position: relative; z-index: 2; }
-      .tech-tok {
-        position: absolute;
-        font-family: var(--font-mono);
-        color: #bcd0ea;
-        white-space: nowrap;
-        opacity: 0;
-        will-change: transform, opacity;
-        animation: tech-float var(--dur, 30s) linear var(--delay, 0s) infinite;
-      }
-      .tech-tok--signal { color: #ff9a54; letter-spacing: 0.02em; }
-      @keyframes tech-float {
-        0%   { transform: translateY(14px); opacity: 0; }
-        18%  { opacity: var(--o, 0.08); }
-        82%  { opacity: var(--o, 0.08); }
-        100% { transform: translateY(-26px); opacity: 0; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .tech-tok { animation: none; transform: none; opacity: calc(var(--o, 0.08) * 0.85); }
-      }
-    </style>
-    <header class="site_header_login">
-        <nav class="nav_login">
-            <a href="/index.html" class="nav_login__brand">PLOG</a>
-            <a href="/index.html" class="nav_login__back">← Voltar</a>
+    <header class="topbar">
+        <a href="/" class="brand" aria-label="PLog — início">
+            <img src="/img/logo-mark.svg" alt="" class="brand__mark" width="32" height="36">
+            <span class="brand__name">PLOG</span>
+        </a>
+        <nav class="topbar__nav">
+            <a href="/index.html" class="text_link">← Voltar ao início</a>
         </nav>
     </header>
 
-    <main class="main_login">
-          <section class="auth_card auth_card--system" aria-label="Autenticação">
-            <div class="v-sysbar">
-              <span class="v-sysbar__mark">PLOG</span>
-            </div>
-            <div class="v-body">
-              <div class="auth_card__header">
-                <h1>Acesso ao sistema</h1>
-                <p class="auth_card__subtitle">Entre com suas credenciais para consultar flows.</p>
-              </div>
-              <div class="auth_panel auth_panel--compact" id="loginPanel" role="tabpanel" aria-labelledby="loginTab">
-                <div id="loginMessage" class="auth_message" hidden role="alert"></div>
-                <form class="login_form" id="loginForm" novalidate>
-                  <div class="field"><label for="username">Usuário</label><input type="text" id="username" name="username" autocomplete="username" placeholder="Seu login" required></div>
-                  <div class="field"><label for="password">Senha</label><div class="field_password"><input type="password" id="password" name="password" autocomplete="current-password" placeholder="Sua senha" required><button type="button" class="field_password__toggle" id="togglePassword" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></div></div>
-                  <button type="submit" class="auth_submit" id="btnLogin">Entrar</button>
-                </form>
-              </div>
-            </div>
-          </section>
+    <main class="login_layout">
+        <section class="login_intro" aria-hidden="true">
+            <p class="eyebrow">Console NOC</p>
+            <h2 class="login_intro__title">Do IP público ao assinante,<br>em uma consulta.</h2>
+
+            <!-- Topologia ilustrativa: assinantes → CGNAT → IP público. -->
+            <svg class="topology" viewBox="0 0 620 380" fill="none">
+                <text class="topology__caption" x="0" y="12">ASSINANTES · 100.64.0.0/10</text>
+                <text class="topology__caption" x="620" y="12" text-anchor="end">IP PÚBLICO</text>
+                <g class="topology__links">
+                    <path d="M144 60C228 60 190 200 284 200"/>
+                    <path d="M144 200C228 200 190 200 284 200"/>
+                    <path d="M144 270C228 270 190 200 284 200"/>
+                    <path d="M144 340C228 340 190 200 284 200"/>
+                    <path d="M376 200C470 200 450 270 568 270"/>
+                </g>
+                <path class="topology__hot" d="M144 130C228 130 190 200 284 200"/>
+                <path class="topology__hot" d="M376 200C470 200 450 130 568 130"/>
+                <g class="topology__nodes">
+                    <rect x="10" y="50" width="20" height="20" rx="4"/>
+                    <rect x="10" y="190" width="20" height="20" rx="4"/>
+                    <rect x="10" y="260" width="20" height="20" rx="4"/>
+                    <rect x="10" y="330" width="20" height="20" rx="4"/>
+                    <circle cx="580" cy="270" r="11"/>
+                </g>
+                <rect class="topology__node-hot" x="10" y="120" width="20" height="20" rx="4"/>
+                <circle class="topology__node-hot" cx="580" cy="130" r="11"/>
+                <circle class="topology__dot-hot" cx="580" cy="130" r="4"/>
+                <circle class="topology__dot" cx="580" cy="270" r="4"/>
+                <rect class="topology__halo" x="276" y="158" width="108" height="84" rx="16"/>
+                <rect class="topology__core" x="284" y="166" width="92" height="68" rx="12"/>
+                <text class="topology__core-label" x="330" y="197" text-anchor="middle">CGNAT</text>
+                <text class="topology__core-sub" x="330" y="215" text-anchor="middle">172.16.2.1</text>
+                <g class="topology__labels">
+                    <text x="42" y="64">100.64.7.223</text>
+                    <text x="42" y="204">100.64.22.47</text>
+                    <text x="42" y="274">100.64.9.133</text>
+                    <text x="42" y="344">100.64.31.88</text>
+                    <text x="592" y="302" text-anchor="end">177.137.21.32</text>
+                </g>
+                <text class="topology__label-hot" x="42" y="134">100.64.18.210</text>
+                <text class="topology__label-hot" x="592" y="104" text-anchor="end">177.137.21.8:39936</text>
+            </svg>
+        </section>
+
+        <section class="auth_card" aria-labelledby="loginTitle">
+            <h1 id="loginTitle" class="auth_card__title">Acesso ao sistema</h1>
+
+            <div id="loginMessage" class="auth_message" hidden role="alert"></div>
+
+            <form class="auth_form" id="loginForm" novalidate>
+                <div class="field">
+                    <label for="username">Usuário</label>
+                    <div class="input_shell">
+                        <span class="input_shell__prompt" aria-hidden="true">&gt;</span>
+                        <input type="text" id="username" name="username" autocomplete="username" placeholder="seu.login" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="password">Senha</label>
+                    <div class="input_shell">
+                        <span class="input_shell__prompt" aria-hidden="true">&gt;</span>
+                        <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+                        <button type="button" class="input_shell__toggle" id="togglePassword" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button>
+                    </div>
+                </div>
+                <button type="submit" class="cta_button cta_button--block" id="btnLogin">
+                    Entrar
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+
+            <p class="auth_card__note">Acesso restrito à equipe autorizada. Sem acesso? Solicite ao administrador.</p>
+        </section>
     </main>
 
-    <footer id="rodape_login" class="footer_login">
-        <div class="footer_login__inner">
-            <div class="footer_login__brand">
-                <span class="footer_login__logo">PLOG</span>
-                <span class="footer_login__tag">Network Flow Analytics</span>
-            </div>
-        </div>
+    <footer class="site_footer">
+        <p>© 2025 Interativa Fibra &amp; Energia Ltda. · CNPJ 38.174.307/0001-81</p>
+        <p>PLog v2.0</p>
     </footer>
 
-    <script src="/script.js?v=6"></script>
+    <script src="/script.js?v=7"></script>
 </body>
 </html>
