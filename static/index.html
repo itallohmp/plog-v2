@@ -3,77 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#040d1f">
+    <meta name="theme-color" content="#002c66">
     <title>PLog</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/style.css?v=10">
+    <link rel="stylesheet" href="/style.css?v=11">
 </head>
-<body class="body_index">
-    <header class="topbar">
+<body class="body_home">
+    <header class="home_header">
         <a href="/" class="brand" aria-label="PLog — início">
             <img src="/img/logo-mark.svg" alt="" class="brand__mark" width="32" height="36">
             <span class="brand__name">PLOG</span>
+            <span class="home_header__divider" aria-hidden="true"></span>
+            <span class="home_header__tag">Network Flow Analytics</span>
         </a>
-        <nav class="topbar__nav">
-            <span class="topbar__version">v2.0</span>
-            <a href="/login.html" class="ghost_button">Entrar</a>
-        </nav>
+        <a href="/login.html" class="home_ghost">Entrar</a>
     </header>
 
-    <main class="hero">
-        <section class="hero__copy">
-            <p class="eyebrow">Análise de flows NAT · CGNAT</p>
-            <h1 class="hero__title">Rastreie qualquer<br><span class="hero__accent">sessão NAT</span> em<br>segundos.</h1>
-            <p class="hero__lead">IP público + porta + instante → assinante. O PLog lê o log de tradução (nfcapd), correlaciona create/delete e entrega cada sessão com estado explícito.</p>
-            <a href="/login.html" class="cta_button">
-                Acessar sistema
-                <span aria-hidden="true">→</span>
-            </a>
-            <ul class="spec_list" aria-label="Tecnologias suportadas">
-                <li>NFCAPD</li>
-                <li>NETFLOW</li>
-                <li>CGNAT</li>
-                <li>TCP · UDP · ICMP</li>
-                <li>EXPORT CSV</li>
+    <main class="home_hero">
+        <section class="home_copy">
+            <h1 class="home_title">Quem usava este IP,<br>nesta porta,<br>naquele instante.</h1>
+            <p class="home_lead">Consulte o log de tradução NAT do provedor por data, IP, porta e protocolo. O PLog correlaciona os eventos create/delete em sessões com estado — resposta pronta para ofícios em segundos.</p>
+            <div class="home_actions">
+                <a href="/login.html" class="home_cta">
+                    Acessar sistema
+                    <span aria-hidden="true">→</span>
+                </a>
+                <span class="home_actions__note">Acesso restrito à equipe do NOC</span>
+            </div>
+            <ul class="home_features">
+                <li><span>IP · Porta · Hora</span>Busca direta no nfcapd</li>
+                <li><span>Sessões</span>Aberta, fechada ou indefinida</li>
+                <li><span>Auditável</span>Saída clara e exportável</li>
             </ul>
         </section>
 
-        <!-- Terminal ilustrativo: mostra o tipo de resposta que o sistema entrega. -->
-        <section class="terminal" aria-hidden="true">
-            <div class="terminal__bar">
-                <span class="terminal__dot"></span>
-                <span class="terminal__dot"></span>
-                <span class="terminal__dot"></span>
-                <span class="terminal__title">noc@plog — consulta</span>
+        <!-- Prévia ilustrativa do resultado de uma consulta. -->
+        <section class="home_preview" aria-hidden="true">
+            <div class="home_preview__bar">
+                <div>
+                    <p class="home_preview__title">Resultados</p>
+                    <p class="home_preview__meta">4 sessões · consulta em 0,42 s</p>
+                </div>
+                <ul class="home_preview__chips">
+                    <li>177.137.21.8</li>
+                    <li>39936</li>
+                    <li>23/07 12–23h</li>
+                </ul>
             </div>
-            <div class="terminal__body">
-                <p><span class="t-prompt">$</span> <b>plog consulta</b> <span class="t-flag">--ip</span> 177.137.21.8 <span class="t-flag">--porta</span> 39936</p>
-                <p class="t-indent"><span class="t-flag">--data</span> 2026-07-23 <span class="t-flag">--hora</span> 12-23</p>
-                <p class="t-gap"><span class="t-flag">›</span> <span class="t-dim">lendo nfcapd.20260723* · 132 arquivos</span> <span class="t-ok">ok</span></p>
-                <p><span class="t-flag">›</span> <span class="t-dim">correlacionando create/delete</span> <span class="t-ok">ok</span></p>
-                <p><span class="t-flag">›</span> <b>4 sessões</b> <span class="t-dim">em 0,42 s</span></p>
-                <table class="terminal__table">
-                    <thead>
-                        <tr><th>Status</th><th>IP local</th><th>Porta NAT</th><th>Início</th><th>Fim</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><span class="session_badge" data-state="aberta">Aberta</span></td><td>100.64.18.210</td><td>39936</td><td>14:02:11</td><td class="t-dim">—</td></tr>
-                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.22.47</td><td>39936</td><td>13:41:05</td><td>13:58:47</td></tr>
-                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.9.133</td><td>39936</td><td>12:17:30</td><td>12:19:02</td></tr>
-                        <tr><td><span class="session_badge" data-state="fechada">Fechada</span></td><td>100.64.31.88</td><td>39936</td><td>12:03:54</td><td>12:05:10</td></tr>
-                    </tbody>
-                </table>
-                <p class="terminal__answer"><span class="t-flag">→</span> <b>100.64.18.210</b> <span class="t-dim">usa 177.137.21.8:39936 desde</span> <b>14:02:11</b></p>
-                <p class="t-gap"><span class="t-prompt">$</span> <span class="t-cursor"></span></p>
+            <table class="home_preview__table">
+                <thead>
+                    <tr><th>Status</th><th>IP local</th><th>Porta NAT</th><th>Início</th><th>Fim</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><span class="home_badge" data-state="aberta">Aberta</span></td><td>100.64.18.210</td><td>39936</td><td>14:02:11</td><td>—</td></tr>
+                    <tr><td><span class="home_badge" data-state="fechada">Fechada</span></td><td>100.64.22.47</td><td>39936</td><td>13:41:05</td><td>13:58:47</td></tr>
+                    <tr><td><span class="home_badge" data-state="fechada">Fechada</span></td><td>100.64.9.133</td><td>39936</td><td>12:17:30</td><td>12:19:02</td></tr>
+                    <tr><td><span class="home_badge" data-state="fechada">Fechada</span></td><td>100.64.31.88</td><td>39936</td><td>12:03:54</td><td>12:05:10</td></tr>
+                </tbody>
+            </table>
+            <div class="home_preview__foot">
+                <span>TCP 1 · UDP 3 · ICMP 0</span>
+                <span>Página 1 de 1</span>
             </div>
         </section>
     </main>
 
-    <footer class="site_footer">
+    <footer class="home_footer">
         <p>© 2025 Interativa Fibra &amp; Energia Ltda. · CNPJ 38.174.307/0001-81</p>
-        <p>PLog v2.0</p>
+        <p>v2.0</p>
     </footer>
     <script src="/script.js?v=7"></script>
 </body>
